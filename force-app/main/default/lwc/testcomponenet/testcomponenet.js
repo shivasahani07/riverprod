@@ -1396,6 +1396,7 @@ handleNext() {
     }
 
     reschedulesavehandleClick() {
+        debugger;
         if (this.datevalue == null && this.typevalue == null) {
             console.log('null value');
             this.handleErrorClick();
@@ -1407,7 +1408,19 @@ handleNext() {
 
                 if (confirm('Are you sure you want to save the changes?')) {
                     console.log('id' + this.selectedrow.TestRideId);
-                    Updaterescheduledate({ rescheduledate: this.datevalue, testdriverid: this.selectedrow.TestRideId, rideType: this.typevalue })
+                    console.log('this.datevalue==>',this.datevalue);
+                    console.log('this.typevalue==>',this.typevalue);
+
+                    let rideTypeCode = '';
+                if (this.typevalue === 'Store Ride') {
+                    rideTypeCode = 'STR';
+                } else if (this.typevalue === 'Home Ride') {
+                    rideTypeCode = 'HTR';
+                } else {
+                    rideTypeCode = this.typevalue; 
+                }
+
+                    Updaterescheduledate({ rescheduledate: this.datevalue, testdriverid: this.selectedrow.TestRideId, rideType: rideTypeCode })
                         .then(result => {
                             console.log('success', result);
                             this.datevalue = null;
@@ -1417,7 +1430,7 @@ handleNext() {
                             this.handleSuccessClick(message);
                         })
                         .catch(error => {
-                            console.log('error6');
+                            console.log('error6',JSON.stringify(error));
                             this.handleErrorClick();
                         });
                 } else {

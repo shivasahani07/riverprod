@@ -57,7 +57,7 @@ public class Insurance_Invoice_PDF_Controller {
         invoiceTotalInWords = '';
 
         String workOrderId = Apexpages.currentPage().getParameters().get('id');
-        List<WorkOrder> workOrderList = [Select Id,CreatedDate,EndDate,Service_Center__r.Name ,Service_Center__r.GSTIN_Number__c,Service_Center__r.ShippingStreet,Service_Center__r.ShippingCity,Service_Center__r.ShippingState,Service_Center__r.ShippingCountry,Service_Center__r.ShippingPostalCode, Invoice_No__c, WorkOrderNumber, Invoice_Date__c, Account.ShippingState,Account.Name,Status,Service_Center__r.Center_Code__c,
+        List<WorkOrder> workOrderList = [Select Id,CreatedDate,EndDate,Service_Center__r.Company_GSTIN_name__c ,Service_Center__r.GSTIN_Number__c,Service_Center__r.ShippingStreet,Service_Center__r.ShippingCity,Service_Center__r.ShippingState,Service_Center__r.ShippingCountry,Service_Center__r.ShippingPostalCode, Invoice_No__c, WorkOrderNumber, Invoice_Date__c, Account.ShippingState,Account.Name,Status,Service_Center__r.Center_Code__c,
                                         Vehicle__r.Insurance__r.Name,Vehicle__r.Policy_Number__c, Vehicle__r.EngineNumber,Invoice_Type__c,Vehicle__r.isCustomerStateSame__c,Odometer_Reading__c,
                                         Vehicle__r.VehicleIdentificationNumber,Vehicle__r.Name,Vehicle__r.VehicleRegistrationNumber,Vehicle__r.LastOdometerReading,toLabel(RR_Job_Type__c),
                                         Vehicle__r.Dealer__r.Name,Vehicle__r.Dealer__r.ShippingStreet,Vehicle__r.Dealer__r.GSTIN_Number__c,Vehicle__r.Insurance__r.Address__City__s, Vehicle__r.Insurance__r.Address__CountryCode__s, 

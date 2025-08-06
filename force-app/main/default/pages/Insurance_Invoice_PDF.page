@@ -57,7 +57,7 @@
                         <img src="{!$Resource.RideRiverLogo}" style="" width="75%" height="60px"/>
                     </td>
                     <td style="width:66%;border-style:solid;border-width:1pt;border-left:none;" colspan="2">
-                        <p class="s1" style="padding-top: 5pt;text-indent: 0pt;line-height: 18pt;text-align: left;">{!workOrderRecord.Service_Center__r.Name }</p>
+                        <p class="s1" style="padding-top: 5pt;text-indent: 0pt;line-height: 18pt;text-align: left;">{!workOrderRecord.Service_Center__r.Company_GSTIN_name__c }</p>
                         <p class="s2" style="text-indent: 0pt;line-height: 11pt;text-align: left;">{!workOrderRecord.Service_Center__r.ShippingStreet}</p>
                         <p class="s3" style="padding-top: 1pt;text-indent: 0pt;text-align: left;">GSTIN : <span class="s2">{!workOrderRecord.Service_Center__r.GSTIN_Number__c}</span></p>
                     </td>

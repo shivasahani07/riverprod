@@ -5,7 +5,7 @@ global with sharing class AccountRegistrationAPI {
     global static void createAccountContact() {
         RestResponse res = RestContext.response;
         res.addHeader('Content-Type', 'application/json');
-        Map<String, String> response = new Map<String, String>();
+        Map<String, String> response = new Map<String, String>(); 
         
         RestRequest req = RestContext.request;
         String requestBody = req.requestBody.toString();
@@ -39,20 +39,16 @@ global with sharing class AccountRegistrationAPI {
                 if (!existingLead.isEmpty()) {
                     system.debug('existing lead found>>'+existingLead[0]);
                     if (existingLead[0].Owner.Type == 'Queue') {
-                    //     User targetUser = [SELECT Id,LastName FROM User WHERE LastName LIKE '%@store' LIMIT 1];
-                        
-                    //     if (targetUser != null) {
-                    //         existingLead[0].OwnerId = targetUser.Id;
-                    String preferredStoreId = LeadTriggerHandler.getPreferredStoreByPincode(existingLead[0].postalCode); // ← you provide this logic
-                    if (preferredStoreId != null) {
-                        System.debug('Assigning preferred store: ' + preferredStoreId);
-                        existingLead[0].Dealer_Code__c = preferredStoreId;
-                        existingLead[0].Dealer_Allocation__c = true;
-                    }
-
-                            existingLead[0].Is_Order_Created__c = true;
-                            update existingLead[0];
-                    //     }
+                        String preferredStoreId = LeadTriggerHandler.getPreferredStoreByPincode(existingLead[0].postalCode);
+                        if (preferredStoreId != null) {
+                            System.debug('Assigning preferred store: ' + preferredStoreId);
+                            List<User> userList = [Select Id,Name from User Where Contact.Account.Center_Code__c =: preferredStoreId AND IsActive = true];
+                            existingLead[0].Dealer_Code__c = preferredStoreId;
+                            existingLead[0].Dealer_Allocation__c = true;
+                            existingLead[0].OwnerId = userList[0].Id;
+                        }
+                        existingLead[0].Is_Order_Created__c = true;
+                        update existingLead[0];
                     }
                     
                     Database.LeadConvert lc = new Database.LeadConvert();
@@ -109,21 +105,21 @@ global with sharing class AccountRegistrationAPI {
                         PostalCode = billing_address.containsKey('pin_code') ? (String)billing_address.get('pin_code') : '',
                         Country = billing_address.containsKey('country') ? (String)billing_address.get('country') : 'India'
                         /* Address = new Address(
-                        street = ((String)billing_address.get('address_1') != null ? (String)billing_address.get('address_1') : '') + ' ' + ((String)billing_address.get('address_2') != null ? (String)billing_address.get('address_2') : ''),
-                        city = (String)billing_address.get('city') != null ? (String)billing_address.get('city') : '',
-                        state = (String)billing_address.get('state') != null ? (String)billing_address.get('state') : '',
-                        postalCode = (String)billing_address.get('pin_code') != null ? (String)billing_address.get('pin_code') : '',
-                        country = (String)billing_address.get('country') != null ? (String)billing_address.get('country') : 'India'
-                        )*/
+street = ((String)billing_address.get('address_1') != null ? (String)billing_address.get('address_1') : '') + ' ' + ((String)billing_address.get('address_2') != null ? (String)billing_address.get('address_2') : ''),
+city = (String)billing_address.get('city') != null ? (String)billing_address.get('city') : '',
+state = (String)billing_address.get('state') != null ? (String)billing_address.get('state') : '',
+postalCode = (String)billing_address.get('pin_code') != null ? (String)billing_address.get('pin_code') : '',
+country = (String)billing_address.get('country') != null ? (String)billing_address.get('country') : 'India'
+)*/
                     );
                     insert newLead;
                     
                     // if (newLead.Owner.Type == 'Queue') {
                     //     User targetUser = [SELECT Id,LastName FROM User WHERE LastName LIKE '%@store' LIMIT 1];
-                        
+                    
                     //     if (targetUser != null) {
-                            // newLead.OwnerId = targetUser.Id;
-                            // update newLead; 
+                    // newLead.OwnerId = targetUser.Id;
+                    // update newLead; 
                     //     }
                     // }
                     
@@ -132,7 +128,8 @@ global with sharing class AccountRegistrationAPI {
                     lc.setConvertedStatus('Converted');
                     
                     Database.LeadConvertResult lcr = Database.convertLead(lc);
-                    system.debug('New Lead is created >> ' + newLead);                    system.debug('creating new account and contact1');
+                    system.debug('New Lead is created >> ' + newLead);                   
+                    system.debug('creating new account and contact1');
                     Account newAccount = new Account(
                         Id = lcr.getAccountId(),
                         Name = (String)requestMap.get('full_name'),
@@ -160,20 +157,20 @@ global with sharing class AccountRegistrationAPI {
             Else{
                 // Create a new Lead with Status as 'Converted'
                 /* Lead newLead = new Lead(
-                LastName = (String)requestMap.get('full_name'),
-                Company = (String)requestMap.get('full_name'),
-                Email = (String)requestMap.get('email_address') != null ? (String)requestMap.get('email_address') : '',
-                Phone = (String)requestMap.get('phone_number') != null ? (String)requestMap.get('phone_number') : '',
-                Status = 'Converted' // Ensure 'Converted' is a valid picklist value in your org
-                /* Address = new Address(
-                street = ((String)billing_address.get('address_1') != null ? (String)billing_address.get('address_1') : '') + ' ' + ((String)billing_address.get('address_2') != null ? (String)billing_address.get('address_2') : ''),
-                city = (String)billing_address.get('city') != null ? (String)billing_address.get('city') : '',
-                state = (String)billing_address.get('state') != null ? (String)billing_address.get('state') : '',
-                postalCode = (String)billing_address.get('pin_code') != null ? (String)billing_address.get('pin_code') : '',
-                country = (String)billing_address.get('country') != null ? (String)billing_address.get('country') : 'India'
-                )
-                );
-                insert newLead;*/
+LastName = (String)requestMap.get('full_name'),
+Company = (String)requestMap.get('full_name'),
+Email = (String)requestMap.get('email_address') != null ? (String)requestMap.get('email_address') : '',
+Phone = (String)requestMap.get('phone_number') != null ? (String)requestMap.get('phone_number') : '',
+Status = 'Converted' // Ensure 'Converted' is a valid picklist value in your org
+/* Address = new Address(
+street = ((String)billing_address.get('address_1') != null ? (String)billing_address.get('address_1') : '') + ' ' + ((String)billing_address.get('address_2') != null ? (String)billing_address.get('address_2') : ''),
+city = (String)billing_address.get('city') != null ? (String)billing_address.get('city') : '',
+state = (String)billing_address.get('state') != null ? (String)billing_address.get('state') : '',
+postalCode = (String)billing_address.get('pin_code') != null ? (String)billing_address.get('pin_code') : '',
+country = (String)billing_address.get('country') != null ? (String)billing_address.get('country') : 'India'
+)
+);
+insert newLead;*/
                 
                 accountId = existingAccount[0].Id;
                 

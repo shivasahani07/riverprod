@@ -1,9 +1,9 @@
-//import createPurchaseorder from '@salesforce/apex/ProductRequestLineController.createPurchaseorder';
 import getCurrentLogedUserAccountRecord from '@salesforce/apex/ProductRequestLineController.getCurrentLogedUserAccountRecord';
 import userId from '@salesforce/user/Id';
 import LightningModal from 'lightning/modal';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import { api } from 'lwc';
+import { api, track } from 'lwc';
+
 export default class CreatePurchaseOrderForm extends LightningModal {
     closeModal() {
         this.close('close');
@@ -12,39 +12,40 @@ export default class CreatePurchaseOrderForm extends LightningModal {
     handleChildCloseModal() {
         this.closeModal();
     }
+   @track selectedType = 'Service';
+
     status = 'New';
     shipmentType = '';
     accountRecordId = '';
     locationRecordId = '';
+    selectedType = '';
+
     @api purchaseOrderRecordId = {};
+    @api POTempObj = {};
 
     firstScreen = true;
+    middleScreen = false;
     secondScreen = false;
 
     currentUserId;
     userLocationName = '';
     accountName;
+
     connectedCallback() {
-        debugger;
         this.currentUserId = userId;
         this.apexMethod();
     }
 
-    @api POTempObj = {};
-
     apexMethod() {
-        debugger;
         getCurrentLogedUserAccountRecord({ loggedInUserId: this.currentUserId })
             .then(result => {
-                if (result && result != null) {
+                if (result && result !== null) {
                     this.accountName = result;
-                } else {
-
                 }
             })
-            .then(error => {
+            .catch(error => {
                 console.log('Error = ' + error);
-            })
+            });
     }
 
     get statusOptions() {
@@ -69,6 +70,14 @@ export default class CreatePurchaseOrderForm extends LightningModal {
         ];
     }
 
+    get typeOptions() {
+        return [
+            { label: 'Service', value: 'Service' },
+            { label: 'Merchandise', value: 'Merchandise' },
+            { label: 'Accessories', value: 'Accessories' }
+        ];
+    }
+
     handleStatusChange(event) {
         this.status = event.detail.value;
     }
@@ -77,17 +86,7 @@ export default class CreatePurchaseOrderForm extends LightningModal {
         this.shipmentType = event.detail.value;
     }
 
-    // handleAccountChange(event) {
-    //     this.accountRecordId = event.detail.recordId;
-    // }
-
-    // handleLocationChange(event) {
-    //     this.locationRecordId = event.detail.recordId;
-    //     console.log(this.locationRecordId);
-    // }
-
     handleSubmitProcess() {
-        debugger;
         if (this.shipmentType === '' || this.locationRecordId === null) {
             this.dispatchEvent(
                 new ShowToastEvent({
@@ -95,52 +94,33 @@ export default class CreatePurchaseOrderForm extends LightningModal {
                     message: 'Please fill Shipment Type',
                     variant: 'error'
                 })
-            )
+            );
             return;
         }
 
+        this.firstScreen = false;
+        this.middleScreen = true;
+    }
 
-        var obj = {
+    handleRadioChange(event) {
+        debugger;
+        this.selectedType = event.detail.value;
+        const filterChangeEvent = new CustomEvent('filterchange', {
+        detail: this.selectedType
+    });
+    this.dispatchEvent(filterChangeEvent);
+        const obj = {
             shipmentType: this.shipmentType,
-            loggedInUserId: this.currentUserId
+            loggedInUserId: this.currentUserId,
+            selectedType: this.selectedType
         };
 
         this.purchaseOrderRecordId = obj;
+        this.middleScreen = false;
         this.secondScreen = true;
-        this.firstScreen = false;
-
-        // createPurchaseorder({ shipmentType: this.shipmentType, loggedInUserId: this.currentUserId })
-        //     .then((result) => {
-        //         debugger;
-        //         this.purchaseOrderRecordId = result;
-        //         this.secondScreen = true;
-        //         this.firstScreen = false;
-        //         this.dispatchEvent(
-        //             new ShowToastEvent({
-        //                 title: 'Success',
-        //                 message: 'New Purchase Order Has Been Created',
-        //                 variant: 'success'
-        //             })
-        //         )
-        //         this.status = '';
-        //         this.shipmentType = '';
-        //         this.accountRecordId = '';
-        //         this.locationRecordId = '';
-        //     })
-        //     .catch((error) => {
-        //         this.dispatchEvent(
-        //             new ShowToastEvent({
-        //                 title: 'Failure',
-        //                 message: 'Something went wrong!!!',
-        //                 variant: 'error'
-        //             })
-        //         )
-        //     })
-
     }
 
     handleExit() {
         this.close('close');
     }
-
 }

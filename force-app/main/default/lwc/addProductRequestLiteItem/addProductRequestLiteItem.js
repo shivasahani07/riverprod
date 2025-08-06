@@ -2,7 +2,7 @@
  * @author Dinesh Baddawar
  * @email dinesh.butilitarianlab@gmail.com
  * @create date 2024-12-10 13:11:20
- * @modify date 2025-01-20 13:18:47
+ * @modify date 2025-01-20 19:44:47
  * @desc [Add ProductRequestLineItems Comp]
  */
 
@@ -14,6 +14,7 @@ import { CloseActionScreenEvent } from 'lightning/actions';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { LightningElement, api, track } from 'lwc';
 export default class AddProductRequestLiteItem extends LightningElement {
+    @api productType = 'Service';
 
     @api recordId;
     @track requestLineItems = [];
@@ -35,6 +36,7 @@ export default class AddProductRequestLiteItem extends LightningElement {
 
     connectedCallback() {
         debugger;
+        this.addEventListener('filterchange', this.handleFilterChange);
         this.currentUserId = userId;
         if (this.recordId == undefined) {
             let params = location.search
@@ -52,13 +54,10 @@ export default class AddProductRequestLiteItem extends LightningElement {
     }
     callApexMethod() {
         debugger;
-        this.showSpinner = true; // Show spinner at the start
-
-        // Track the start time
-        const spinnerDelay = 1000; // 3 seconds
+        this.showSpinner = true; 
+        const spinnerDelay = 1000; 
         const startTime = new Date().getTime();
-
-        getLogedInUserRelatedLocationPOLI({ loggedInUserId: this.currentUserId })
+        getLogedInUserRelatedLocationPOLI({ loggedInUserId: this.currentUserId, productTypeFilter: this.productType  })
             .then((data) => {
                 if (data) {
                     this.requestLineItems = data.map((res) => ({
@@ -84,32 +83,44 @@ export default class AddProductRequestLiteItem extends LightningElement {
                 // Calculate the time remaining to ensure the spinner shows for at least 3 seconds
                 const elapsedTime = new Date().getTime() - startTime;
                 const remainingTime = Math.max(0, spinnerDelay - elapsedTime);
-
                 setTimeout(() => {
-                    this.showSpinner = false; // Hide spinner after ensuring 3 seconds have passed
+                    this.showSpinner = false; 
                 }, remainingTime);
             });
     }
-
+    handleFilterChange(event) {
+        debugger;
+        console.log("Filter changed:", event.detail); 
+        this.productType = event.detail;
+        this.callApexMethod();
+    }
 
     handleSearchInput(event) {
-        debugger;
-        const searchTerm = event.target.value.toLowerCase().trim();
-        if (searchTerm) {
-            this.filteredRequestLineItems = this.requestLineItems.filter(item => (
-                item.ProductName.toLowerCase().startsWith(searchTerm) || item.ProductCode.toLowerCase().startsWith(searchTerm))
-            );
-            this.totalPages = Math.ceil(this.filteredRequestLineItems.length / this.recordsPerPage);
-            this.currentPage = 1;
-            this.updatePageData();
-        } else if (!searchTerm) {
-            this.filteredRequestLineItems = [];
-            this.updatePageData();
-        }
+    debugger;
+    const searchTerm = event.target.value?.toLowerCase().trim();
 
+    if (searchTerm) {
+        this.filteredRequestLineItems = this.requestLineItems.filter(item => {
+            const name = (item.ProductName || '').toLowerCase();
+            const code = (item.ProductCode || '').toLowerCase();
+            return name.includes(searchTerm) || code.includes(searchTerm);
+        });
 
-        this.selectAllChecked = this.currentPageData.every(item => item.selected);
+        this.totalPages = Math.ceil(this.filteredRequestLineItems.length / this.recordsPerPage);
+        this.currentPage = 1;
+        this.updatePageData();
+    } else {
+        
+        this.filteredRequestLineItems = [];
+        this.currentPage = 1;
+        this.totalPages = 1;
+        this.currentPageData = [];
     }
+
+    this.selectAllChecked = this.currentPageData?.length
+        ? this.currentPageData.every(item => item.selected)
+        : false;
+}
 
     handleDelete(event) {
         const itemId = event.target.dataset.id;
@@ -118,28 +129,31 @@ export default class AddProductRequestLiteItem extends LightningElement {
     }
 
     handleDeleteSelectedItem(event) {
+        debugger;
         const itemId = event.target.dataset.id;
         const deletedItem = this.selectedItems.find(item => item.Id === itemId);
+        
         if (deletedItem) {
             this.selectedItems = this.selectedItems.filter(item => item.Id !== itemId);
             this.selectedItems = this.selectedItems.map((item, index) => ({
                 ...item,
-                index: index + 1 // Re-index after removal
+                index: index + 1
             }));
-            this.filteredRequestLineItems.push({
-                ...deletedItem,
-                selected: false,
-                isChargesDisabled: true // Reset disabled state
-            });
-
-            // Sort the filtered list to maintain order
-            this.filteredRequestLineItems.sort((a, b) => a.index - b.index);
-
-            // Update pagination
+    
+            const alreadyExists = this.filteredRequestLineItems.some(item => item.Id === itemId);
+            if (!alreadyExists) {
+                this.filteredRequestLineItems.push({
+                    ...deletedItem,
+                    selected: false,
+                    isChargesDisabled: true
+                });
+    
+                this.filteredRequestLineItems.sort((a, b) => a.index - b.index);
+            }
+    
             this.totalPages = Math.ceil(this.filteredRequestLineItems.length / this.recordsPerPage);
-            //this.updatePageData();
         }
-
+    
         this.updatePageData();
         this.selectAllChecked = this.currentPageData.every(item => item.selected);
         this.buttonVisible = this.selectedItems.length > 0;
@@ -173,78 +187,28 @@ export default class AddProductRequestLiteItem extends LightningElement {
     handleSelectAll(event) {
         const isChecked = event.target.checked;
         this.selectAllChecked = isChecked;
-
-
         this.currentPageData = this.currentPageData.map(item => {
             const updatedItem = {
                 ...item,
                 selected: isChecked,
                 isChargesDisabled: !isChecked
             };
-
             if (isChecked) {
-
                 if (!this.selectedItems.find(i => i.Id === item.Id)) {
                     this.selectedItems = [...this.selectedItems, updatedItem];
                 }
             } else {
-
                 this.selectedItems = this.selectedItems.filter(i => i.Id !== item.Id);
             }
-
             return updatedItem;
         });
-
 
         if (isChecked) {
             this.currentPageData = [];
         }
     }
-
-    // handleCheckboxChange(event) {
-    //     const itemId = event.target.dataset.id;
-    //     const isChecked = event.target.checked;
-
-
-    //     this.currentPageData = this.currentPageData.map(item => {
-    //         if (item.Id === itemId) {
-    //             const updatedItem = { ...item, selected: isChecked };
-
-    //             if (isChecked) {
-
-    //                 this.selectedItems = [
-    //                     ...this.selectedItems,
-    //                     { ...updatedItem, index: this.selectedItems.length + 1 }
-    //                 ];
-    //             } else {
-
-    //                 this.selectedItems = this.selectedItems.filter(i => i.Id !== itemId);
-    //             }
-
-    //             return updatedItem;
-    //         }
-    //         return item;
-    //     });
-
-
-    //     if (isChecked) {
-    //         this.currentPageData = this.currentPageData.filter(item => item.Id !== itemId);
-
-
-    //     }
-    //     if (this.selectedItems.length > 0) {
-    //         this.buttonVisible = true;
-    //     }
-
-
-    //     this.selectAllChecked = this.currentPageData.every(item => item.selected);
-    //     //code added at 3:18pm
-
-    //     //indexing code
-
-    //     //upto here
-    // }
-
+    
+    
     handleCheckboxChange(event) {
         const itemId = event.target.dataset.id;
         const isChecked = event.target.checked;
@@ -297,13 +261,12 @@ export default class AddProductRequestLiteItem extends LightningElement {
         this.buttonVisible = this.selectedItems.length > 0;
         this.selectAllChecked = this.currentPageData.every(i => i.selected);
     }
-
+   
     handleUpdateProcess() {
         debugger;
         const invalidItems = this.selectedItems.filter(item => {
             return isNaN(item.AllocatedQuantity) || item.AllocatedQuantity <= 0 || item.AllocatedQuantity === '' || item.AllocatedQuantity === null;
         });
-
         if (invalidItems.length > 0) {
             this.dispatchEvent(
                 new ShowToastEvent({
@@ -321,7 +284,6 @@ export default class AddProductRequestLiteItem extends LightningElement {
             ParentId: this.PoCreatedRecordId
         }));
         console.log('updatedItems === >' + updatedItems);
-
         var jsondatatopass = JSON.stringify(updatedItems);
         debugger;
         createProductRequestLineItems({ jsonData: jsondatatopass })
@@ -335,7 +297,6 @@ export default class AddProductRequestLiteItem extends LightningElement {
                         })
                     );
                     this.updatedValues.clear();
-                    //this.dispatchEvent(new CloseActionScreenEvent());
                     this.closeModal();
                 } else {
                     this.dispatchEvent(
@@ -345,7 +306,6 @@ export default class AddProductRequestLiteItem extends LightningElement {
                             variant: 'error'
                         })
                     );
-                    // this.dispatchEvent(new CloseActionScreenEvent());
                     this.closeModal();
                 }
             })
@@ -362,15 +322,15 @@ export default class AddProductRequestLiteItem extends LightningElement {
             });
     }
 
-    methodToCreatePORecords() {
+    methodToCreatePORecords(){
         debugger;
         const hasZeroQuantity = this.methodToCheckZeroQuntiry();
         if (hasZeroQuantity) {
             return;
         }
-         this.showProductSpinner= true;
+        this.showProductSpinner= true;
         setTimeout(()=>{
-            createPurchaseorder({ shipmentType: this.recordId.shipmentType, loggedInUserId: this.recordId.loggedInUserId }).then(result => {
+            createPurchaseorder({ shipmentType: this.recordId.shipmentType, loggedInUserId: this.recordId.loggedInUserId, ProductType : this.productType }).then(result => {
                 if (result && result != null) {
                     this.PoCreatedRecordId = result;
                     this.handleUpdateProcess();
@@ -387,17 +347,6 @@ export default class AddProductRequestLiteItem extends LightningElement {
             })
 
         },2000)
-        // createPurchaseorder({ shipmentType: this.recordId.shipmentType, loggedInUserId: this.recordId.loggedInUserId }).then(result => {
-        //     if (result && result != null) {
-        //         this.PoCreatedRecordId = result;
-        //         this.handleUpdateProcess();
-        //     } else {
-        //         alert('something went wrong !');
-        //     }
-        // })
-        //     .catch(error => {
-        //         console.log('Error = >' + error);
-        //     })
     }
 
     updatePageData() {
@@ -411,10 +360,9 @@ export default class AddProductRequestLiteItem extends LightningElement {
                 index: start + index + 1
             };
         });
-
         this.selectedItems = this.selectedItems.map((item, index) => ({
             ...item,
-            index: index + 1 // Re-index from 1
+            index: index + 1 
         }));
         console.log('start:', start, 'end:', end);
     }
@@ -482,5 +430,8 @@ export default class AddProductRequestLiteItem extends LightningElement {
         }
         return hasZeroQuantity;
     }
+    disconnectedCallback() {
+    this.removeEventListener('filterchange', this.handleFilterChange);
+}
 
 }

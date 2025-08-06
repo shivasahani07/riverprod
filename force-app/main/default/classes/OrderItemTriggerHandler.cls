@@ -36,14 +36,20 @@ public class OrderItemTriggerHandler {
         List<OrderItem> orderItemsToUpdate = new List<OrderItem>();
         List<OrderItem> allOrderItems = [
             SELECT Id, OrderId, Type__c, Vehicle_Roll_Up__c, Accessories_Roll_Up__c, Merchandise_Disccount__c,
-                   Product_Total_Amount__c, UnitPrice, Quantity
+                   Product_Total_Amount__c, UnitPrice, Quantity, Total_Pre_GST_Discount__c
             FROM OrderItem 
             WHERE OrderId IN :orderIds
         ];
-    
+    	
+         Decimal TotalPreGSTDis = 0;
         for (OrderItem oi : allOrderItems) {
             Decimal rollupValue = oi.Product_Total_Amount__c != null ? oi.Product_Total_Amount__c : 0;
             Decimal unitTotal = (oi.UnitPrice != null && oi.Quantity != null) ? oi.UnitPrice * oi.Quantity : 0;
+            System.debug('Total_Pre_GST_Discount__c====> ' + oi.Total_Pre_GST_Discount__c);
+            System.debug('oi.Product_Total_Amount__c ==>'+ oi.Product_Total_Amount__c);
+            
+             TotalPreGSTDis += (oi.Total_Pre_GST_Discount__c != null ? oi.Total_Pre_GST_Discount__c : 0);
+            System.debug('Total_Pre_GST_Discount__c====> ' + TotalPreGSTDis);
     
             if (oi.Type__c == 'Vehicle') {
                 totalVehicleRollup.put(oi.OrderId,
@@ -59,7 +65,11 @@ public class OrderItemTriggerHandler {
                 merchandiseUnitPriceMap.put(oi.OrderId,
                     merchandiseUnitPriceMap.containsKey(oi.OrderId) ? merchandiseUnitPriceMap.get(oi.OrderId) + unitTotal : unitTotal);
             }
-            //orderItemsToUpdate.add(oi);
+            if(trigger.isAfter && Trigger.isInsert){
+                 orderItemsToUpdate.add(oi);
+                System.debug('orderItemsToUpdate ==>'+orderItemsToUpdate);
+            }
+           
         }
     
         System.debug('Total Vehicle Rollups: ' + totalVehicleRollup);
@@ -67,6 +77,7 @@ public class OrderItemTriggerHandler {
         System.debug('Total Merchandise Rollups: ' + totalMerchandiseRollup);
         System.debug('Accessories Unit Price Rollups: ' + accessoriesUnitPriceMap);
         System.debug('Merchandise Unit Price Rollups: ' + merchandiseUnitPriceMap);
+        
     
         List<Order> ordersToUpdate = new List<Order>();
     
@@ -84,7 +95,8 @@ public class OrderItemTriggerHandler {
                 Total_Accessories_Rollup__c = accessoriesTotal.round(),
                 Total_Merchandise_Rollup__c = merchandiseTotal.round(),
                 Total_Accessories_Unit_Price__c = accessoriesUnitTotal.round(),
-                Total_Merchandise_Unit_Price__c = merchandiseUnitTotal.round()
+                Total_Merchandise_Unit_Price__c = merchandiseUnitTotal.round(),
+                Total_Pre_GST_Discount__c = TotalPreGSTDis
             );
             ordersToUpdate.add(updatedOrder);
         }
@@ -92,7 +104,18 @@ public class OrderItemTriggerHandler {
         if (!ordersToUpdate.isEmpty()) {
             try {
                 update ordersToUpdate;
+                System.debug('ordersToUpdate ==>'+ordersToUpdate);
                 System.debug('Successfully updated Orders with aggregated roll-up values.');
+            } catch (DmlException e) {
+                System.debug('Error updating Orders: ' + e.getMessage());
+            }
+        }
+		
+           if (!orderItemsToUpdate.isEmpty()) {
+            try {
+                update orderItemsToUpdate;
+                System.debug('ordersItemToUpdate ==>'+orderItemsToUpdate);
+                System.debug('Successfully updated OrderItemsForUpdate with aggregated roll-up values.');
             } catch (DmlException e) {
                 System.debug('Error updating Orders: ' + e.getMessage());
             }

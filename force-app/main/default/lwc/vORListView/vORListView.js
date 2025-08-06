@@ -59,7 +59,9 @@ export default class VORListView extends NavigationMixin(LightningElement) {
         const { data, error } = result;
 
         if (data && Array.isArray(data)) {
-            this.fetchedVORS = data.filter(v => !v.VOR_Reason__c);
+            this.fetchedVORS = [data[0]]; // wrap in array
+            console.log('this.fetchedVORS---', JSON.stringify(this.fetchedVORS));
+
             this.vors = this.fetchedVORS.map(vor => {
                 if (!vor || !vor.Id) return null;
                 return {
@@ -73,7 +75,7 @@ export default class VORListView extends NavigationMixin(LightningElement) {
             }).filter(vor => vor !== null);
 
             this.error = undefined;
-        } else if (error) {
+        }   else if (error) {
             this.vors = [];
             this.error = error;
             console.error('Error loading VORs:', JSON.stringify(error));
@@ -160,7 +162,7 @@ export default class VORListView extends NavigationMixin(LightningElement) {
         this.vors = this.vors.map(vor => ({ ...vor, isEditingStatus: false }));
     }
 
-   
+
     handleRefresh() {
         this.isLoading = true;
         refreshApex(this.wiredVorsResult)

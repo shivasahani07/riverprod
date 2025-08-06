@@ -1,6 +1,6 @@
 public class NewAccessoriesInvoicePDFController {
     Public List<OrderItem> orderItemList{get;set;}
-    Public Date currentDate {get;set;}
+    Public Date InvoiceDate {get;set;}
     Public Order order{get;set;}
     Public string inWords{get;set;}
     Public string invoiceId{get;set;}
@@ -127,9 +127,6 @@ public class NewAccessoriesInvoicePDFController {
                 System.debug('samestate---'+sameState);
             }
             
-            currentDate = Date.today();
-            
-            
             System.debug('Order Id---' + orderId);
             if (order.RecordType.DeveloperName == 'OTC') {
                     AccessoriesDiscountAmountOnOrder = order.OTC_Additional_Discount_Amount__c != null ? order.OTC_Additional_Discount_Amount__c : 0;
@@ -156,12 +153,20 @@ public class NewAccessoriesInvoicePDFController {
             System.debug('totalValueAfterAllTaxes::::>>' + totalValueAfterAllTaxes);
             
             //InvoiceId generation
-            string invoicesequence = System.currentPageReference().getParameters().get('sequence');
+            List<Order_Invoice__c> orderInvoices = [
+                SELECT Id, Name, Invoice_Number__c, Invoice_Type__c, Invoice_Date__c 
+                FROM Order_Invoice__c 
+                WHERE Order__c = :orderId AND Invoice_Type__c = 'Accessories Invoice'
+                ORDER BY CreatedDate DESC 
+                LIMIT 1
+            ];
             
-            If(invoicesequence != null && invoicesequence != ''){
-                invoiceId = invoicesequence;
-            }else{
+            if (!orderInvoices.isEmpty()) {
+                InvoiceDate = orderInvoices[0].Invoice_Date__c;
+                invoiceId = orderInvoices[0].Invoice_Number__c;
+            } else {
                 invoiceId = 'RV_INVOICE_VH';
+                InvoiceDate = System.today();
             }
             
             System.debug('invoiceId>>'+invoiceId);

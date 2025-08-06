@@ -62,7 +62,7 @@
         <table class="info">
             <tr>
                 <th>Dealer Name:</th>
-                <td>{!workOrder.Service_Center__r.Name}</td>
+                <td>{!workOrder.Service_Center__r.Company_GSTIN_name__c}</td>
                 <th>Estimate No. :</th>
                 <td>{!workOrder.Estimate_No__c}</td>
             </tr>

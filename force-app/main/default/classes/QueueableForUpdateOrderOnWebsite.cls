@@ -2,7 +2,7 @@
  * @description       : 
  * @author            : Aniket Karmakar
  * @group             : 
- * @last modified on  : 07-02-2025
+ * @last modified on  : 07-25-2025
  * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
 **/
 public with sharing class QueueableForUpdateOrderOnWebsite implements Queueable, Database.allowsCallouts{
@@ -90,6 +90,11 @@ public with sharing class QueueableForUpdateOrderOnWebsite implements Queueable,
                     //payLoad.put('vin_number',String.valueof(v.VehicleIdentificationNumber));
                     //payLoad.put('vehicle_number',String.valueof(v.VehicleRegistrationNumber));
                     
+                    if (o.Assigned_Vehicle__c != null && v != null) {
+                        payLoad.put('delivery_date', String.valueOf(o.Delivery_Date__c));
+                        payLoad.put('vin_number', String.valueOf(v.VehicleIdentificationNumber));
+                        payLoad.put('vehicle_number', String.valueOf(v.VehicleRegistrationNumber));
+                    }
                     payLoad.put('order_status',o.Status);
                     // payLoad.put('order_amount',o.Grand_Total__c);
                     payLoad.put('crm_account_id',o.AccountId);

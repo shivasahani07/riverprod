@@ -187,7 +187,9 @@
                             </td>
                             <td rowspan="2" style="border: 1px solid;border-collapse:collapse;">Estimated Delivery Time</td>
                             <td rowspan="2" style="border: 1px solid;border-collapse:collapse;">
-                                 {!formattedEstimatedDeliveryTime}
+                                <apex:outputText value="{0,date,dd/MM/yyyy} {0,time,h:mm a}">
+                                    <apex:param value="{!jobcard.RR_Estimated_Delivery_Time__c}" />
+                                </apex:outputText>
                             </td>
                         </tr>
                         
@@ -527,7 +529,9 @@
                             </td>
                             <td rowspan="2" style="border: 1px solid;border-collapse:collapse;">Estimated Delivery Time</td>
                             <td rowspan="2" style="border: 1px solid;border-collapse:collapse;">
-                                {!formattedEstimatedDeliveryTime}
+                                <apex:outputText value="{0,date,dd/MM/yyyy} {0,time,h:mm a}">
+                                    <apex:param value="{!jobcard.RR_Estimated_Delivery_Time__c}" />
+                                </apex:outputText>
                             </td>
                         </tr>
                         

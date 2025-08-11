@@ -28,6 +28,7 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
     @track label = 'VIN';
     @track vehicleIdentifier = '';
     @track phoneNumber = '';
+    @track ewSubmitted=false;
     @track vehicleDetails = {
         VehicleIdentificationNumber: '',
         VehicleRegistrationNumber: '',
@@ -448,6 +449,7 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
                         .then(result => {
                             console.log('vehicle =>', result.vehicle);
                             this.vehicleDetails = result.vehicle;
+                            this.ewSubmitted = result.vehicle.EW_Submitted__c;//added by Aniket on 31/07/2025
                             this.phoneNumber = result.primaryContactPhone || '';
                             this.showToastMessage('Success', 'Vehicle details fetched successfully', 'success');
                             this.showPhoneInput = !this.showPhoneInput;
@@ -834,7 +836,8 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
         debugger;
         const elements = this.template.querySelectorAll('.validate');
         let proceed = true;
-
+        
+        
         // Iterate over each element and check validity
         elements.forEach(element => {
             element.reportValidity();
@@ -848,7 +851,7 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
             }
         });
 
-         if(this.TypeOfJob=='' || this.TypeOfJob==null){
+        if(this.TypeOfJob=='' || this.TypeOfJob==null){
                 this.showToastMessage('alert', 'Please Select Job Type', 'alert');
                 return;
         }

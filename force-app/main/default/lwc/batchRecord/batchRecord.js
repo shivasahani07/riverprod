@@ -310,4 +310,16 @@ export default class BatchRecord extends LightningElement {
         });
         this.dispatchEvent(event);
     }
+     handleSearchKey(event){
+        debugger;
+        this.searchKey = event.target.value;
+        console.log('this.searchKey=>',this.searchKey.toLowerCase());
+        if(this.searchKey){
+            this.claimsFiltered = this.claims.filter(c=>c.Name.toLowerCase().includes((this.searchKey).toLowerCase()));
+            console.log('this.claims==>',this.claims);
+        }else{
+            this.claimsFiltered = this.claims;
+        }
+        console.log('this.claims==>',this.claims);
+    }
 }

@@ -188,77 +188,9 @@ public class WorkOrderLineItemTriggerHandler {
     }
     
     private static void updateWarrantyTotalClaimedAmount(Set<Id> warrantyPriorIds) {
-        // added on for that no duplicate warranties were create
-            if (!warrantyPriorIds.isEmpty()) {
-        // Step 0.1: Get IDs of warranties that DO have parts
-       /* Set<Id> warrantiesWithParts = new Set<Id>();
-        List<AggregateResult> aggregateResultsWithParts = [
-            SELECT Warranty_Prior__c 
-            FROM WorkOrderLineItem 
-            WHERE Warranty_Prior__c IN :warrantyPriorIds 
-            GROUP BY Warranty_Prior__c
-        ];
-
-        for (AggregateResult ar : aggregateResultsWithParts) {
-            warrantiesWithParts.add((Id)ar.get('Warranty_Prior__c'));
-        }
-
-        // Step 0.2: Find warranties that have NO parts
-        Set<Id> warrantiesWithNoParts = new Set<Id>(warrantyPriorIds);
-        warrantiesWithNoParts.removeAll(warrantiesWithParts);
-
-        if (!warrantiesWithNoParts.isEmpty()) {
-            System.debug('Deleting warranties with no parts: ' + warrantiesWithNoParts);
-            delete [SELECT Id FROM Warranty_Prior__c WHERE Id IN :warrantiesWithNoParts];
-            // Remove from original set so we don't update them
-            warrantyPriorIds.removeAll(warrantiesWithNoParts);
-        }*/
-    }
         try {
             System.debug('Warranty Prior IDs for Total Claimed Amount Update: ' + warrantyPriorIds);
-        
-            // Step 1: Aggregate TotalAmount__c from WorkOrderLineItems
-            Map<Id, Decimal> warrantyToTotalAmountMap = new Map<Id, Decimal>();
-            List<AggregateResult> aggregateResults = [
-                SELECT Warranty_Prior__c, SUM(TotalAmount__c) totalAmount
-                FROM WorkOrderLineItem
-                WHERE Warranty_Prior__c IN :warrantyPriorIds
-                GROUP BY Warranty_Prior__c
-            ];
-        
-            System.debug('Aggregate Results for TotalAmount__c: ' + aggregateResults);
-        
-            for (AggregateResult result : aggregateResults) {
-                warrantyToTotalAmountMap.put(
-                    (Id) result.get('Warranty_Prior__c'),
-                    (Decimal) result.get('totalAmount')
-                );
-            }
-        
-            System.debug('Map of Warranty Prior to Total Amount: ' + warrantyToTotalAmountMap);
-        
-            // Step 2: Update Warranty Prior records
-            List<Warranty_Prior__c> warrantiesToUpdate = new List<Warranty_Prior__c>();
-            for (Id warrantyId : warrantyPriorIds) {
-                if (warrantyId != null) { // Ensure warrantyId is not null
-                    Decimal totalAmount = warrantyToTotalAmountMap.get(warrantyId) != null ? warrantyToTotalAmountMap.get(warrantyId) : 0;
-                    System.debug('Warranty ID: ' + warrantyId + ', Total Amount: ' + totalAmount);
-        
-                    warrantiesToUpdate.add(new Warranty_Prior__c(
-                        Id = warrantyId,
-                        Total_Claim_Amount__c = totalAmount
-                    ));
-                } else {
-                    System.debug('Skipping update for null Warranty ID.');
-                }
-            }
-        
-            if (!warrantiesToUpdate.isEmpty()) {
-                System.debug('Warranties to Update: ' + warrantiesToUpdate);
-                update warrantiesToUpdate;
-            } else {
-                System.debug('No Warranties to Update.');
-            }
+             Database.executeBatch(new WarrantyUpdateBatch(warrantyPriorIds), 200);
         } catch (Exception e) {
             System.debug('Error in updateWarrantyTotalClaimedAmount: ' + e.getMessage());
             throw e;

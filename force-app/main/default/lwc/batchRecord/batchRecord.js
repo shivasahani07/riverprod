@@ -21,6 +21,9 @@ export default class BatchRecord extends LightningElement {
     @track batchAmount = 0;
     @track showModal = false;
 
+    @track searchKey;//added by Aniket on 31/07/2025
+    @track claimsFiltered=[];
+
     //@track batchDispatchDate;
     @track lrNumber = '';
     @track lrAttachment = ''; 
@@ -32,6 +35,8 @@ export default class BatchRecord extends LightningElement {
     valueMOT = '';
     contact;
     contactName;
+    city;
+    serviceCenter;
     wiredClaimsResult; // Store the result of the wired service to refresh later
 
     columns = [
@@ -59,6 +64,7 @@ export default class BatchRecord extends LightningElement {
         this.wiredClaimsResult = result;
         if (result.data) {
             this.claims = result.data;
+            this.claimsFiltered=result.data;
         } else if (result.error) {
             this.showToast('Error', `Error fetching claims: ${result.error.body.message}`, 'error');
         }
@@ -70,6 +76,8 @@ export default class BatchRecord extends LightningElement {
         if (data) {
             this.contact = data;
             this.contactName = data.FirstName + ' ' + data.LastName;
+            this.city = data.Account.City__c;
+            this.serviceCenter = data.Account.Service_Center__c;
             this.error = undefined;
         } else if (error) {
             this.error = error.body.message;
@@ -268,13 +276,17 @@ export default class BatchRecord extends LightningElement {
 
         try {
             const claimIds = this.selectedClaims.map(claim => claim.Id);
+            const tempcontact=this.contact;
+            console.log('tempcontact==>',tempcontact);
             const result = await createBatchAndTagClaims({
                 claimIds,
                // batchDispatchDate: this.batchDispatchDate,
                 lrNumber: this.lrNumber,
                 lrAttachment: this.lrAttachment,
                 TOD: this.TOD, AOC: this.AOC, RN: this.RN, VN: this.VN, HPS: this.HPS, Phone: this.Phone,
-                POS: this.POS, TN: this.TN, TID: this.TID, Eway: this.Eway, MOT: this.MOT, contactId: this.contact.Id
+                POS: this.POS, TN: this.TN, TID: this.TID, Eway: this.Eway, MOT: this.MOT, contactId: this.contact.Id,
+                city: this.city, 
+                serviceCenter: this.serviceCenter
             });
 
             this.showToast('Success', 'Batch created successfully.', 'success');
@@ -310,7 +322,8 @@ export default class BatchRecord extends LightningElement {
         });
         this.dispatchEvent(event);
     }
-     handleSearchKey(event){
+    //this was added by Aniket on 31/08/2025 as per Search Key Requirement
+    handleSearchKey(event){
         debugger;
         this.searchKey = event.target.value;
         console.log('this.searchKey=>',this.searchKey.toLowerCase());

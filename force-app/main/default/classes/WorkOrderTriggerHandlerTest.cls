@@ -30,7 +30,7 @@ public class WorkOrderTriggerHandlerTest {
         Software_Version__c testSV = new Software_Version__c(Name='Test Software Version 1');
         insert testSV;
         
-        Vehicle testVehicle = new Vehicle(Name='Test Vehicle 2', Account__c=testAccount.Id, AssetId=testAsset.Id,  VehicleDefinitionId=testVD.Id, VehicleIdentificationNumber='A2B3',  Software_Version__c=testSV.Id, Charger_PC_Number__c='abcd',PDI_Status_Pass__c=true);
+        Vehicle testVehicle = new Vehicle(Name='Test Vehicle 2', Account__c=testAccount.Id, AssetId=testAsset.Id,  VehicleDefinitionId=testVD.Id, VehicleIdentificationNumber='A2B3',  Software_Version__c=testSV.Id, Charger_PC_Number__c='abcd',PDI_Status_Pass__c=true,LastOdometerReading=90);
         insert testVehicle;
         
         Vehicle testVehicle2 = new Vehicle(Name='Test Vehicle 3', Account__c=testAccount.Id, AssetId=testAsset2.Id,  VehicleDefinitionId=testVD.Id, VehicleIdentificationNumber='A2B3C56',  Software_Version__c=testSV.Id, Charger_PC_Number__c='abcd',PDI_Status_Pass__c=true);
@@ -46,7 +46,7 @@ public class WorkOrderTriggerHandlerTest {
             RecordTypeId = vehiclePdiRtId,
             Warehouse__c = testWarehouse.Id,
             Vehicle__c = testVehicle.Id,
-            Odometer_Reading__c = 100,
+            Odometer_Reading__c = 110,
             Status = 'New',
             Subject = 'Test Work Order', 
             RR_Technician__c = con.Id,
@@ -222,6 +222,7 @@ public class WorkOrderTriggerHandlerTest {
         //update testWorkOrder2;
        
         testWorkOrder.Status='New';
+        testWorkOrder.Odometer_Reading__c=111;
         update testWorkOrder;
         ///delete testWorkOrder;
         delete testWorkOrder2;

@@ -1,12 +1,5 @@
-/**
- * @description       : 
- * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
- * @group             : 
- * @last modified on  : 02-14-2025
- * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
-**/
 trigger WorkOrderTrigger on WorkOrder (before insert, before update, after update, after Insert) {
-    
+     public static Boolean isFirstRun = true;
     if(trigger.isBefore && trigger.isUpdate){
         for(WorkOrder wo : trigger.new){
             if(wo.Status == 'Completed' && trigger.oldMap.get(wo.Id).Invoice_Date__c == null){
@@ -15,52 +8,73 @@ trigger WorkOrderTrigger on WorkOrder (before insert, before update, after updat
         }
     }
     
-    if (trigger.isBefore && (trigger.isInsert || trigger.isUpdate)) {
-        Set<String> vehicleSet = new Set<String>();
-        map<id,set<id>> mapVehicleIdToWoIds = new map<id,set<id>>();
-        Set<String> newVehicleSet = new Set<String>();
+     if (Trigger.isBefore && (Trigger.isInsert || Trigger.isUpdate)) {
+        if (!isFirstRun) {
+            //return;
+        }
+        Set<Id> vehicleSet = new Set<Id>();
+        Map<Id, Set<Id>> mapVehicleIdToWoIds = new Map<Id, Set<Id>>();
+        Set<Id> newVehicleSet = new Set<Id>();
+        Map<Id, Decimal> vehicleOdoMap = new Map<Id, Decimal>();
         
+        // Collect Vehicle IDs from Trigger.new
         for (WorkOrder wo : Trigger.new) {
             if (wo.Vehicle__c != null) {
                 vehicleSet.add(wo.Vehicle__c);
             }
         }
-        List<WorkOrder> existingWorkOrders = [
-            SELECT Id, Vehicle__c, 
-            Vehicle_Identification_number__c, Vehicle_registration_number__c 
-            FROM WorkOrder 
-            WHERE Vehicle__c IN :vehicleSet AND status NOT IN ('Completed', 'Canceled') 
-        ];
         
-        for(WorkOrder wo : existingWorkOrders){
-            if(!mapVehicleIdToWoIds.containsKey(wo.Vehicle__c)){
-                mapVehicleIdToWoIds.Put(wo.Vehicle__c, new set<id>());
+        if (!vehicleSet.isEmpty()) {
+            
+            // Query WorkOrders and build Vehicle -> WorkOrder map in one go
+            for (WorkOrder wo : [
+                SELECT Id, Vehicle__c, Odometer_Reading__c, Status,Vehicle__r.LastOdometerReading
+                FROM WorkOrder
+                WHERE Vehicle__c IN :vehicleSet]) 
+            {
+                vehicleOdoMap.put(wo.Vehicle__c, wo.Vehicle__r.LastOdometerReading);
+                if (!mapVehicleIdToWoIds.containsKey(wo.Vehicle__c)) {
+                    mapVehicleIdToWoIds.put(wo.Vehicle__c, new Set<Id>());
+                }
+                if (wo.Status != 'Completed' && wo.Status != 'Canceled') {
+                    mapVehicleIdToWoIds.get(wo.Vehicle__c).add(wo.Id);
+                }
             }
-            mapVehicleIdToWoIds.Get(wo.Vehicle__c).add(wo.Id);
-        }
-        
-        if (!existingWorkOrders.isEmpty()) {
+            
             for (WorkOrder wo : Trigger.new) {
-                
-                If(trigger.isinsert){
-                    If((mapVehicleIdToWoIds.containsKey(wo.Vehicle__c) && mapVehicleIdToWoIds.get(wo.Vehicle__c).size()>0) || newVehicleSet.contains(wo.Vehicle__c)){
-                        wo.Vehicle__c.addError('A job card already exists for this vehicle with same VIN or VRN.');
+                // Odometer validation
+                Decimal lastOdo = vehicleOdoMap.get(wo.Vehicle__c);
+                if (lastOdo != null && wo.Odometer_Reading__c != null &&
+                    wo.Odometer_Reading__c <= lastOdo) {
+                        wo.Odometer_Reading__c.addError(
+                            'Odometer reading must be greater than the Vehicle record value: ' + lastOdo
+                        );
                     }
-                    newVehicleSet.add(wo.Vehicle__c);
-                }else{
-                    If(mapVehicleIdToWoIds.containsKey(wo.Vehicle__c) && mapVehicleIdToWoIds.get(wo.Vehicle__c).size()>0 && trigger.oldmap.get(wo.Id).Vehicle__c != wo.Vehicle__c){
-                        if(!(mapVehicleIdToWoIds.get(wo.Vehicle__c).size() == 1 && mapVehicleIdToWoIds.get(wo.Vehicle__c).contains(wo.Vehicle__c))){
+                
+                // VIN/VRN uniqueness
+                if (Trigger.isInsert) {
+                    if ((mapVehicleIdToWoIds.containsKey(wo.Vehicle__c) && 
+                         !mapVehicleIdToWoIds.get(wo.Vehicle__c).isEmpty()) 
+                        || newVehicleSet.contains(wo.Vehicle__c)) {
                             wo.Vehicle__c.addError('A job card already exists for this vehicle with same VIN or VRN.');
                         }
-                    }
+                    newVehicleSet.add(wo.Vehicle__c);
                     
-                    if(!mapVehicleIdToWoIds.containsKey(wo.Vehicle__c)){
-                        mapVehicleIdToWoIds.Put(wo.Vehicle__c, new set<id>());
-                    }
-                    mapVehicleIdToWoIds.Get(wo.Vehicle__c).add(wo.Id);
+                } else { // Update
+                    if (mapVehicleIdToWoIds.containsKey(wo.Vehicle__c) && 
+                        !mapVehicleIdToWoIds.get(wo.Vehicle__c).isEmpty() &&
+                        Trigger.oldMap.get(wo.Id).Vehicle__c != wo.Vehicle__c) {
+                            
+                            if (!(mapVehicleIdToWoIds.get(wo.Vehicle__c).size() == 1 && 
+                                  mapVehicleIdToWoIds.get(wo.Vehicle__c).contains(wo.Id))) {
+                                      wo.Vehicle__c.addError('A job card already exists for this vehicle with same VIN or VRN.');
+                                  }
+                        }
+                    mapVehicleIdToWoIds.get(wo.Vehicle__c).add(wo.Id);
                 }
             }
         }
+        isFirstRun = false;
     }
     
     if (trigger.isafter &&  trigger.isUpdate) {
@@ -92,15 +106,15 @@ trigger WorkOrderTrigger on WorkOrder (before insert, before update, after updat
     }
     //code Added by Aniket on 14/02/2025
     if(Trigger.isAfter && Trigger.isUpdate){
-       // WorkOrderTriggerHandler.updatePDIAfterCompetetion(Trigger.new,Trigger.oldMap); 
-       WorkOrderTriggerHandler.createSkippedActionPlan(Trigger.new, Trigger.oldMap);
-       //code Added by Sagar on 14/04/2025
-      // WorkOrderTriggerHandler.handleJobCardCompletion(Trigger.new,Trigger.oldMap);
+        // WorkOrderTriggerHandler.updatePDIAfterCompetetion(Trigger.new,Trigger.oldMap); 
+        WorkOrderTriggerHandler.createSkippedActionPlan(Trigger.new, Trigger.oldMap);
+        //code Added by Sagar on 14/04/2025
+        // WorkOrderTriggerHandler.handleJobCardCompletion(Trigger.new,Trigger.oldMap);
     }
-
-     //code Added by Sagar on 07/04/2025
-     if (trigger.isAfter && trigger.isInsert) {
-       // WorkOrderTriggerHandler.handleNewJobCards(trigger.new);
+    
+    //code Added by Sagar on 07/04/2025
+    if (trigger.isAfter && trigger.isInsert) {
+        // WorkOrderTriggerHandler.handleNewJobCards(trigger.new);
     }
-
+    
 }

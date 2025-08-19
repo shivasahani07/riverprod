@@ -7,9 +7,12 @@
 **/
 public class LeadTriggerHandler {
     public static void callQueableMethodForNewLead(List<Lead> newLeads){
-        String templateName = 'new_lead_book_a_test_ride_03';
+        
         try{
+            System.debug('Inside Test 18/07');
             List<Store_Details__mdt> dealerCodes = [Select id,Dealer_Code__c,IsActive__c From Store_Details__mdt WHERE IsActive__c = true];
+
+            System.debug('dealerCodes==>'+dealerCodes);
             
             List<Id> newLeadIds = new List<Id>();
             Map<Id,String> newLeadMap = new Map<Id,String>();
@@ -30,8 +33,10 @@ public class LeadTriggerHandler {
                 
             }
             List<Lead> leadListToFetch = [Select Id,LeadSource,Phone,Dealer_Code__c,Lead_Dealer_Code__c FROM Lead WHERE (Dealer_Code__c IN:storeDealerCodes OR Lead_Dealer_Code__c IN:storeDealerCodes) AND Id IN:leadIds];
+            System.debug('leadListToFetch==>'+leadListToFetch);
             //up to here
-            // String templateName = 'new_lead_book_a_test_ride_03';
+             //String templateName = 'new_lead_book_a_test_ride_03';
+             String templateName = 'lead_to_test_ride_flow';
             if(!leadListToFetch.isEmpty()){
                 for(Lead lead : leadListToFetch){
                     if((lead.LeadSource == 'Bike Dekho' || lead.LeadSource =='Facebook'||lead.LeadSource=='Google'||lead.LeadSource=='91Wheels') && (storeDealerCodes.contains(lead.Dealer_Code__c)||storeDealerCodes.contains(lead.Lead_Dealer_Code__c)) && lead.Phone !=null ){
@@ -39,8 +44,8 @@ public class LeadTriggerHandler {
                         newLeadMap.put(lead.Id,lead.Phone);
                     }
                 }
-                if(newLeadIds!=null && templateName!=null && imageUrl!=null && newLeadMap!=null){
-                    System.enqueueJob(new QueueableForImageTemplateMsg(newLeadIds, templateName, imageUrl, newLeadMap));
+                if(!newLeadIds.isEmpty() && templateName!=null && newLeadMap!=null){
+                    System.enqueueJob(new LeadToTestRideQueueable(newLeadIds, templateName, newLeadMap));//changed by Aniket on 04/08/2025
                 }
             }
             
@@ -50,9 +55,12 @@ public class LeadTriggerHandler {
             System.debug('Error Cause ==>'+e.getCause());
         }
     }
+
     
     public static void callQueableMethodForAfterUpdate(List<Lead> newLeads,Map<Id,Lead> oldLeadMap){
-        String templateName = 'new_lead_book_a_test_ride_03';
+        //    String templateName = 'new_lead_book_a_test_ride_03';
+        String templateName = 'lead_to_test_ride_flow';
+        
         try{
             List<Store_Details__mdt> dealerCodes = [Select id,Dealer_Code__c,IsActive__c From Store_Details__mdt WHERE IsActive__c = true];
             List<Id> newLeadIds = new List<Id>();
@@ -92,7 +100,7 @@ public class LeadTriggerHandler {
                     System.debug('templateName======>' + templateName);
                     System.debug('imageUrl======>' + imageUrl);
                     System.debug('newLeadMap======>' + newLeadMap);
-                    System.enqueueJob(new QueueableForImageTemplateMsg(newLeadIds, templateName, imageUrl, newLeadMap));
+                    System.enqueueJob(new LeadToTestRideQueueable(newLeadIds, templateName, newLeadMap));
                 }
                 
             }
@@ -103,7 +111,7 @@ public class LeadTriggerHandler {
             System.debug('Error Cause ==>'+e.getCause());
         }
     }
-    
+
     public static void callQueueableAfterRNR(List<Lead> newLeadList,Map<Id,Lead> oldLeadMap){
         String templateName = 'rnr_whatsapp_book_test_ride';
         try{

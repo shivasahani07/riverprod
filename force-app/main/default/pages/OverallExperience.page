@@ -1,3 +1,10 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 07-17-2025
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
 <apex:page controller="OverallExpereinceController" showHeader="false" sidebar="false" standardStylesheets="false" >
     <apex:includeScript value="/soap/ajax/43.0/connection.js"/>
     <apex:includeScript value="/soap/ajax/43.0/apex.js"/>
@@ -375,7 +382,8 @@
         const currentDate = new Date();
         const diffHours = Math.abs(currentDate - sentDate) / 36e5; // hours
        
-        return diffHours >= 24;
+        // return diffHours >= 24;
+        return false;//added by Aniket on 17/07/2025
     }
 
 function checkExistingFeedback() {
@@ -413,7 +421,8 @@ function isLinkExpired(sentDateTime) {
     const sentDate = new Date(sentDateTime);
     const currentDate = new Date();
     const diffHours = Math.abs(currentDate - sentDate) / 36e5; // hours
-    return diffHours >= 24;
+    // return diffHours >= 24;
+     return false;//added by Aniket on 17/07/2025
 }
 
 function showExpiredMessage() {

@@ -151,6 +151,7 @@ export default class RideRiverWarrantyRecord extends LightningElement {
                 Total_Labour_Cost__c: item.Total_Labour_Cost__c || 0,
                 Status :item.Status__c
             }));
+            console.log(JSON.stringify(this.labourData));
         } else if (result.error) {
             this.error = result.error;
             this.labourData = [];

@@ -55,20 +55,14 @@ public class RSACalloutHandler_test {
         pb.Name = 'test';
         insert pb; 
         
-        
-        
         Order o = new Order();
         o.Pricebook2Id = pb.Id;  
         o.AccountId = Acc.Id;
         o.Payment_Status__c = 'Completed';
-        o.Status = 'Activated';
+        o.Status = 'Draft';
         o.EffectiveDate = Date.today();
         o.Assigned_Vehicle__c = v.Id;
         insert o; 
-        
-        
-        
-        
         
         list<Pricebook2> standardPricebook = [SELECT Id,IsStandard,IsActive FROM Pricebook2];
         Id standardPricebookcostumproduct;
@@ -94,16 +88,9 @@ public class RSACalloutHandler_test {
                 Oitem.Quantity = 1;
                 insert Oitem;
                 system.debug('Orderidtest'+o.Id);
-                
-                standardPricebookcostumproduct=pe.Id;
-                
+                standardPricebookcostumproduct=pe.Id;       
             }
         }
-        
-        
-        
-        
-        
         return o.Id;
         
     }
@@ -113,6 +100,36 @@ public class RSACalloutHandler_test {
         Id orderid = RSACalloutHandler_test.getchasisnumbertestforstatusvehicleallocation();
         Order ord = [SELECT Id, Status,RSA_Active__c FROM Order WHERE Id = :orderid];
         
+        Pricebook2 pb = new Pricebook2();
+        pb.Name = 'test';
+        insert pb; 
+        
+        //added by Aniket
+        Product2 testProduct = new Product2(Name = 'Test Product', IsActive = true,ProductCode='abcd',HSN_Code__c='abcd',Type__c='Vehicle');
+        insert testProduct;
+        
+        Product2 testProduct2 = new Product2(Name = 'Test Product', IsActive = true,ProductCode='abcd',HSN_Code__c='abcd',Type__c='Extended Warranty');
+        insert testProduct2;
+        
+        Id stdPrBk = Test.getStandardPricebookId();
+        PricebookEntry testPricebookEntry = new PricebookEntry(
+            Product2Id = testProduct.Id,
+            Pricebook2Id = stdPrBk,
+            UnitPrice = 100.0,	
+            IsActive = true
+        );
+        insert testPricebookEntry;
+        
+        /*OrderItem testOrderItem = new OrderItem(
+            OrderId = ord.Id,
+            Product2Id = testProduct.Id,
+            UnitPrice = 100.0,
+            Type__c='Vehicle',
+            Quantity = 1,
+            PricebookEntryId = testPricebookEntry.Id
+        );
+        insert testOrderItem;*/
+        //upto here
         ord.Status = 'Ready For Delivery';
         ord.RSA_Active__c=true;
         update ord;
@@ -128,6 +145,8 @@ public class RSACalloutHandler_test {
     public static void getchasisnumbertestforstatusvehicleallocationtestupdatereg() {
         Id orderid = RSACalloutHandler_test.getchasisnumbertestforstatusvehicleallocation();
         Order ord = [SELECT Id, Status,RSA_Active__c FROM Order WHERE Id = :orderid];
+        
+        
         
         ord.Status = 'Payment Pending';
         ord.RSA_Active__c = true;
@@ -145,8 +164,7 @@ public class RSACalloutHandler_test {
         
         Id orderId = RSACalloutHandler_test.getchasisnumbertestforstatusvehicleallocation();//getchasisnumberWihtoutVehicleOrder
         
-        Order_Invoice__c oi = new Order_Invoice__c(Order__c=orderId,Name='Test Invoice',Invoice_Number__c='i12Ac4',Invoice_Type__c='Vehicle Invoice',
-                                                   Invoice_date__c=System.Today());
+        Order_Invoice__c oi = new Order_Invoice__c(Order__c=orderId,Name='Test Invoice',Invoice_Number__c='i12Ac4',Invoice_Type__c='Vehicle Invoice', Invoice_date__c=System.Today());
         insert oi;
         
         Order order = [SELECT Id, Status, RSA_Active__c FROM Order WHERE Id = :orderId];
@@ -162,8 +180,6 @@ public class RSACalloutHandler_test {
             fullpayment_done__c='examplePayment.jpg'
         );
         insert mockIntegration;
-        
-        //Test.setMock(HttpCalloutMock.class, new RSACalloutMock());
         
         Test.startTest();
         Test.setMock(HttpCalloutMock.class, new RSACalloutMock());
@@ -254,7 +270,7 @@ public class RSACalloutHandler_test {
         Order odr = new Order();
         odr.Name = 'Test Order';
         odr.Assigned_Vehicle__c = v.Id;
-        odr.Status = 'RTO Registration';
+        odr.Status = 'Draft';
         odr.AccountId = acc.Id;
         odr.EffectiveDate = System.Today();
         odr.Pricebook2Id = standardPricebook.Id;
@@ -266,6 +282,10 @@ public class RSACalloutHandler_test {
         oi.Quantity = 1;
         oi.UnitPrice = 500;
         insert oi;
+        
+        Order_Invoice__c oii = new Order_Invoice__c(Order__c=odr.Id,Name='Test Invoice',Invoice_Number__c='i12Ac4',Invoice_Type__c='Vehicle Invoice', Invoice_date__c=System.Today());
+        insert oii;
+        
         
         System.debug('Order ID: ' + odr.Id);
         

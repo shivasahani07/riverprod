@@ -1,6 +1,7 @@
 public class AssetMilestoneTriggerWorker {
-	 public static void createPDIItems(List<AssetMilestone> newList, Map<Id, AssetMilestone> newMap, Map<Id, AssetMilestone> oldMap){
-
+    
+    public static void createPDIItems(List<AssetMilestone> newList, Map<Id, AssetMilestone> newMap, Map<Id, AssetMilestone> oldMap){
+        
         // Specify the object and field API name
         String objectApiName = 'AssetMilestone';
         String fieldApiName = 'MilestoneType';
@@ -11,9 +12,9 @@ public class AssetMilestoneTriggerWorker {
         for(String milestoneType : milestoneTypesToBeSkipCustomLabel.split(',')){
             MilestoneTypesToBeSkipped.add(milestoneType);
         }
-
+        
         Map<String, Integer> milestoneseqs = getPicklistValuesWithSeq(objectApiName, fieldApiName, MilestoneTypesToBeSkipped);      
-
+        
         Set<Id> vehicleID = new Set<Id>();
         List<Vehicle> allVehicles = new List<Vehicle>();
         Map<Id,Boolean> vehicleStatus = new Map<Id,Boolean>();
@@ -32,10 +33,10 @@ public class AssetMilestoneTriggerWorker {
         
         // List to hold new Child records to be inserted
         List<Pre_Delivery_Inspection_Item__c> newChildRecords = new List<Pre_Delivery_Inspection_Item__c>();
-    
+        
         // Map to store existing Child records related to Parent objects
         Map<Id, List<Pre_Delivery_Inspection_Item__c>> existingChildRecordsMap = new Map<Id, List<Pre_Delivery_Inspection_Item__c>>();
-    
+        
         // Query for existing Child records related to Parent objects
         for (Pre_Delivery_Inspection_Item__c existingChildRecord : [SELECT Id, Asset_Milestone__c, Pre_Delivery_Inspection__c, Check__c FROM Pre_Delivery_Inspection_Item__c WHERE Asset_Milestone__c IN :newMap.keySet()]) {
             if (!existingChildRecordsMap.containsKey(existingChildRecord.Asset_Milestone__c)) {
@@ -70,7 +71,7 @@ public class AssetMilestoneTriggerWorker {
             }
             
         }
-    
+        
         // Insert new Child records
         if (!newChildRecords.isEmpty()) {
             insert newChildRecords;
@@ -80,28 +81,28 @@ public class AssetMilestoneTriggerWorker {
     public static void checkMilestoneRecord(List<AssetMilestone> milestones) {
         Set<String> existingVehicleMilestoneTypes = new Set<String>();
         //Set<String> milestoneTypes = new Set<String>{'1st Service','2nd Service','3rd Service','4th Service','5th Service','6th Service','7th Service','8th Service','9th Service','10th Service','11th Service','12th Service','13th Service','14th Service','15th Service','16th Service','17th Service','18th Service'};
-		
+        
         Set<String> milestoneTypes = new Set<String>();
         String milestoneTypesToBeSkipCustomLabel = System.Label.milestoneTypesToBeSkip;
         for(String milestoneType : milestoneTypesToBeSkipCustomLabel.split(',')){
             milestoneTypes.add(milestoneType);
         } 
-            
+        
         // Jitendra : Where clause added in query to optimize the query
         Set<Id> vehicleID = new Set<Id>();
         for (AssetMilestone asset : milestones) {
             vehicleID.add(asset.vehicleID);
         }
-
+        
         // Query existing AssetMilestone records
         for (AssetMilestone existingMilestone : [SELECT VehicleId, MileStonetype FROM AssetMilestone where MilestoneType IN :milestoneTypes AND vehicleID IN :vehicleID]) {
             // Construct a unique identifier for the combination of vehicle and milestone type
             String vehicleMilestoneKey = existingMilestone.VehicleId + '-' + existingMilestone.MilestoneType;
-    
+            
             // Add the combination to the set
             existingVehicleMilestoneTypes.add(vehicleMilestoneKey);
         }
-    
+        
         // Iterate through the AssetMilestones being inserted
         for (AssetMilestone newMilestone : milestones) {
             //Jitendra : Date Validation Added as per UAT feedback
@@ -112,7 +113,7 @@ public class AssetMilestoneTriggerWorker {
             
             // Construct a unique identifier for the combination of vehicle and milestone type
             String newVehicleMilestoneKey = newMilestone.VehicleId + '-' + newMilestone.MilestoneType;
-    
+            
             // Check if the combination already exists in the set
             if (existingVehicleMilestoneTypes.contains(newVehicleMilestoneKey)) {
                 // If it does, prevent the insertion of the new AssetMilestone
@@ -133,20 +134,20 @@ public class AssetMilestoneTriggerWorker {
             List<Vehicle> fetchAllVehicles = [Select Id,Name,PDI_Status_Pass__c From Vehicle Where Id IN:vehicleID];
             
             if(fetchAllVehicles != null && fetchAllVehicles.size() > 0){
-            	for(Vehicle vac : fetchAllVehicles){
+                for(Vehicle vac : fetchAllVehicles){
                     Vehicle vc = new Vehicle();
                     vc.Id = vac.Id;
-               		vc.PDI_Status_Pass__c = false;
+                    vc.PDI_Status_Pass__c = false;
                     allVehicles.add(vc);
-            	}
-        	}
+                }
+            }
             
             if(allVehicles != null && allVehicles.size() > 0){
                 update allVehicles;
             }
         }
     }
-
+    
     public static Map<String, Integer> getPicklistValuesWithSeq(String objectApiName, String fieldApiName, Set<String> MilestoneTypesToBeSkipped){
         Map<String, Integer> milestoneseqs = new Map<String, Integer>(); 
         Schema.DescribeSObjectResult objectDescribe = Schema.getGlobalDescribe().get(objectApiName).getDescribe();
@@ -168,7 +169,7 @@ public class AssetMilestoneTriggerWorker {
         }
         return milestoneseqs;
     }
-
+    
     public static void checkMilestoneSequenceRecord(List<AssetMilestone> milestones){
         // Specify the object and field API name
         String objectApiName = 'AssetMilestone';
@@ -191,10 +192,10 @@ public class AssetMilestoneTriggerWorker {
             cureentMilestones.add(asset.Id);
             // System.debug('asset Id '+asset.Id);
         }
-
+        
         allVehicles = [Select Id, (SELECT Id, MilestoneType, Name, CreatedDate FROM AssetMilestones Where ID Not IN :cureentMilestones AND MilestoneType Not IN :MilestoneTypesToBeSkipped ORDER BY MilestoneType DESC limit 1) from Vehicle Where Id IN :vehicleIDs];
         Boolean isFirstMileStone = true;
-       
+        
         if(allVehicles != null && allVehicles.size() > 0){
             for(Vehicle vc : allVehicles){
                 if(vc.AssetMilestones != null && vc.AssetMilestones.size() > 0){
@@ -206,7 +207,7 @@ public class AssetMilestoneTriggerWorker {
             }
         }        
         System.debug('vehicleStatus'+vehicleStatus);
-
+        
         for (AssetMilestone asset : milestones) {
             if(asset.VehicleId != null){
                 String key = asset.VehicleId;
@@ -218,15 +219,15 @@ public class AssetMilestoneTriggerWorker {
                     System.debug('vehicleStatus.get(key) :'+vehicleStatus.get(key));
                     System.debug('asset.MilestoneType :'+asset.MilestoneType);
                     if(lastStatusSeq + 1 != nextStatusSeq){
-                        asset.addError('You cannot create a '+asset.MilestoneType+' milestone before completing the prior milestones.');
+                          asset.addError('You cannot create a '+asset.MilestoneType+' milestone before completing the prior milestones.');
                     }
                 } 
                 else if(isFirstMileStone && milestoneseqs.get(asset.MilestoneType) != 1){
                     System.debug('milestoneseqs.get(asset.MilestoneType) : '+milestoneseqs.get(asset.MilestoneType));
-                    asset.addError('You cannot create a '+asset.MilestoneType+' milestone before completing the prior milestones.');
+                     asset.addError('You cannot create a '+asset.MilestoneType+' milestone before completing the prior milestones.');
                 }
             }
         }
-
+        
     }
 }

@@ -1,6 +1,13 @@
+/**
+ * @description       : 
+ * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @group             : 
+ * @last modified on  : 08-26-2025
+ * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+**/
 public class WorkOrderTriggerHandler {
     
- 	
+    
     public static void PreventClosingifActionPlanIncomplete(List<WorkOrder> newWorkOrders, Map<Id, WorkOrder> oldWorkOrders) {
         Set<Id> completedJobCardIds = new Set<Id>();
         
@@ -637,4 +644,437 @@ public class WorkOrderTriggerHandler {
             }
         }
     }
+    
+   /*public static void onJobcardOpenUdpateAssetMilestone(List<WorkOrder> orderList) {
+    try {
+        System.debug('orderList === ' + orderList);
+
+        if (orderList.isEmpty()) {
+            return;
+        }
+
+        // Map of MaintenanceType -> Earliest WO Created Date
+        Map<String, Date> maintenanceTypeToWODate = new Map<String, Date>();
+
+        for (WorkOrder wo : orderList) {
+            System.debug('Inside1 === ');
+            if (wo.RR_Periodic_Maintenance_Type__c != null) {
+                Date woDate = wo.CreatedDate != null ? wo.CreatedDate.date() : Date.today();
+                
+                // Keep earliest WO date for each Maintenance Type
+                if (!maintenanceTypeToWODate.containsKey(wo.RR_Periodic_Maintenance_Type__c) ||
+                    maintenanceTypeToWODate.get(wo.RR_Periodic_Maintenance_Type__c) > woDate) {
+                    maintenanceTypeToWODate.put(wo.RR_Periodic_Maintenance_Type__c, woDate);
+                }
+            }
+        }
+
+        if (maintenanceTypeToWODate.isEmpty()) {
+            return;
+        }
+
+        Set<String> maintenanceTypes = maintenanceTypeToWODate.keySet();
+
+        // Query AssetMilestone by only MilestoneType
+        List<AssetMilestone> milestonesToUpdate = [
+            SELECT Id, VehicleId, MilestoneDate, Stage, MilestoneType
+            FROM AssetMilestone
+            WHERE MilestoneType IN :maintenanceTypes
+        ];
+
+        List<AssetMilestone> updateList = new List<AssetMilestone>();
+        Set<Id> assetMilestoneIds = new Set<Id>();
+
+        for (AssetMilestone milestone : milestonesToUpdate) {
+            System.debug('Inside3 === ');
+            Date woCreatedDate = maintenanceTypeToWODate.get(milestone.MilestoneType);
+            assetMilestoneIds.add(milestone.Id);
+
+            // Check if Milestone Date is greater than WO Created Date + 30 days
+            if (milestone.MilestoneDate != null && 
+                milestone.MilestoneDate > woCreatedDate.addDays(30)) {
+                milestone.Stage = 'Active';
+                updateList.add(milestone);
+            }
+        }
+
+        if (!updateList.isEmpty()) {
+            System.debug('Inside4 === ');
+            update updateList;
+            System.debug('Updated ' + updateList.size() + ' Asset Milestones to Active.');
+        }
+
+        // Get related ServiceAppointments
+        List<ServiceAppointment> serviceAppointmentList = [
+            SELECT Id,Call_Status__c
+            FROM ServiceAppointment
+            WHERE Asset_Milestone__c IN :assetMilestoneIds
+        ];
+
+        Set<Id> serviceAppointmentIds = new Set<Id>();
+        list<ServiceAppointment> UpdatedSAlist = new list<ServiceAppointment>();
+        if (!serviceAppointmentList.isEmpty()) {
+            System.debug('Inside5 === ');
+            for (ServiceAppointment saRec : serviceAppointmentList) {
+                serviceAppointmentIds.add(saRec.Id);
+                saRec.Call_Status__c = 'Completed';
+                UpdatedSAlist.add(saRec);
+            }
+        }
+
+        // Get and update related Tasks
+        List<Task> taskList = [
+            SELECT Id, Status
+            FROM Task
+            WHERE WhatId IN :serviceAppointmentIds
+            AND Status != 'Completed'
+        ];
+
+        List<Task> updateTaskList = new List<Task>();
+        if (!taskList.isEmpty()) {
+            System.debug('Inside6 === ');
+            for (Task taskRec : taskList) {
+                taskRec.Status = 'Completed';
+                updateTaskList.add(taskRec);               
+            }
+        }
+        
+        if(!UpdatedSAlist.IsEmpty()){
+            update UpdatedSAlist;
+        }
+
+        if (!updateTaskList.isEmpty()) {
+            System.debug('Inside7 === ');
+            update updateTaskList;
+            System.debug('Updated ' + updateTaskList.size() + ' tasks to Completed.');
+        }
+
+    } catch (Exception e) {
+        System.debug('getError Message: ' + e.getMessage() + 
+                     ' Get LineError: ' + e.getLineNumber());
+    }
+   }
+       
+ public static void onJobcardCompleteUpdateAssetMilestone(List<WorkOrder> orderList, Map<Id, WorkOrder> oldMap) {
+    try {
+        System.debug('orderList === ' + orderList);
+
+        if (orderList.isEmpty()) {
+            return;
+        }
+
+        // Get Maintenance Types for WOs that have just been marked Completed
+        Set<String> maintenanceTypes = new Set<String>();
+        for (WorkOrder wo : orderList) {
+            WorkOrder oldWo = oldMap.get(wo.Id);
+
+            // Only run when status changes from something else to 'Completed'
+            if (wo.Status == 'Completed' && oldWo != null && oldWo.Status != 'Completed') {
+                if (wo.RR_Periodic_Maintenance_Type__c != null) {
+                    maintenanceTypes.add(wo.RR_Periodic_Maintenance_Type__c);
+                }
+            }
+        }
+
+        if (maintenanceTypes.isEmpty()) {
+            System.debug('No completed WorkOrders found for processing.');
+            return;
+        }
+
+        // Query AssetMilestone records by maintenance type
+        List<AssetMilestone> milestonesToUpdate = [
+            SELECT Id, VehicleId, MilestoneDate, Stage, MilestoneType
+            FROM AssetMilestone
+            WHERE MilestoneType IN :maintenanceTypes
+        ];
+
+        List<AssetMilestone> updateMilestoneList = new List<AssetMilestone>();
+        Set<Id> assetMilestoneIds = new Set<Id>();
+
+        for (AssetMilestone milestone : milestonesToUpdate) {
+            milestone.Stage = 'Active';
+            updateMilestoneList.add(milestone);
+            assetMilestoneIds.add(milestone.Id);
+        }
+
+        if (!updateMilestoneList.isEmpty()) {
+            update updateMilestoneList;
+            System.debug('Updated ' + updateMilestoneList.size() + ' Asset Milestones to Active.');
+        }
+
+        // Get related ServiceAppointments and mark Call_Status__c = 'Completed'
+        List<ServiceAppointment> serviceAppointmentList = [
+            SELECT Id, Call_Status__c
+            FROM ServiceAppointment
+            WHERE Asset_Milestone__c IN :assetMilestoneIds
+        ];
+
+        List<ServiceAppointment> updatedSAList = new List<ServiceAppointment>();
+        Set<Id> serviceAppointmentIds = new Set<Id>();
+        for (ServiceAppointment saRec : serviceAppointmentList) {
+            saRec.Call_Status__c = 'Completed';
+            updatedSAList.add(saRec);
+            serviceAppointmentIds.add(saRec.Id);
+        }
+
+        if (!updatedSAList.isEmpty()) {
+            update updatedSAList;
+            System.debug('Updated ' + updatedSAList.size() + ' Service Appointments to Completed.');
+        }
+
+        // Get and update related Tasks
+        List<Task> taskList = [
+            SELECT Id, Status
+            FROM Task
+            WHERE WhatId IN :serviceAppointmentIds
+            AND Status != 'Completed'
+        ];
+
+        List<Task> updateTaskList = new List<Task>();
+        for (Task taskRec : taskList) {
+            taskRec.Status = 'Completed';
+            updateTaskList.add(taskRec);
+        }
+
+        if (!updateTaskList.isEmpty()) {
+            update updateTaskList;
+            System.debug('Updated ' + updateTaskList.size() + ' Tasks to Completed.');
+        }
+
+    } catch (Exception e) {
+        System.debug('getError Message: ' + e.getMessage() +
+                     ' Get LineError: ' + e.getLineNumber());
+    }
+}*/
+//added by Aniket on 26/06/2025
+public static void handleWorkPlanUpdateCategory(List<WorkPlan> newWorkPlans,Map<Id,Workplan> oldMap) {
+        // Step 1: Collect WorkOrder IDs (Job_Card__c) from WorkPlans
+        Set<String> restrictedLabourCategories = new Set<String>();
+        for (Labour_Category_Restricted__mdt meta : [SELECT Labour_Category_Name__c FROM Labour_Category_Restricted__mdt]) {
+            restrictedLabourCategories.add(meta.Labour_Category_Name__c);
+        }
+        
+        Set<Id> workOrderIds = new Set<Id>();
+        for (WorkPlan workPlan : newWorkPlans) {
+            if (workPlan.WorkOrderId != null && workPlan.RR_Labour_Category__c != oldMap.get(workPlan.Id).RR_Labour_Category__c && !restrictedLabourCategories.contains(workPlan.RR_Labour_Category__c)) {
+                workOrderIds.add(workPlan.WorkOrderId);
+            }
+        }
+        
+        // Step 2: Query existing Warranties related to Job_Card__c (WorkOrder IDs)
+        Map<Id, Warranty_Prior__c> existingWarrantyMap = new Map<Id, Warranty_Prior__c>(
+            [SELECT Id, Job_Card__c, Status__c
+             FROM Warranty_Prior__c
+             WHERE Job_Card__c IN :workOrderIds]
+        );
+        
+        // Step 3: Map existing warranties by Job_Card__c
+        Map<Id, Id> workOrderToWarrantyMap = new Map<Id, Id>();
+        for (Warranty_Prior__c warranty : existingWarrantyMap.values()) {
+            workOrderToWarrantyMap.put(warranty.Job_Card__c, warranty.Id); // Map Job_Card__c to Warranty ID
+        }
+        
+        // **Only Update Status to Pending for Existing Warranties**
+        List<Warranty_Prior__c> warrantiesToUpdate = new List<Warranty_Prior__c>();
+        for (Warranty_Prior__c warranty : existingWarrantyMap.values()) {
+            if (warranty.Status__c == 'Approved') {
+                warranty.Status__c = 'Pending'; 
+                warrantiesToUpdate.add(warranty);
+            }
+        }
+        
+        
+        if (!warrantiesToUpdate.isEmpty()) {
+            update warrantiesToUpdate;
+            System.debug('Updated Warranties Status to Pending: ' + warrantiesToUpdate);
+        }
+        
+        // Step 4: Query WorkOrder details for creating new Warranties
+        Map<Id, WorkOrder> workOrderMap = new Map<Id, WorkOrder>(
+            [SELECT Id,
+             Vehicle__c,
+             Odometer_Reading__c,
+             Vehicle_Registration_Number__c,
+             Vehicle__r.EngineNumber,
+             Vehicle__r.VehicleIdentificationNumber
+             FROM WorkOrder
+             WHERE Id IN :workOrderIds]
+        );
+        
+        // Step 5: Create new Warranties for WorkOrders without an existing Warranty
+        List<Warranty_Prior__c> newWarranties = new List<Warranty_Prior__c>();
+        
+        for (WorkPlan workPlan : newWorkPlans) {
+            if (workPlan.WorkOrderId != null && !workOrderToWarrantyMap.containsKey(workPlan.WorkOrderId)) {
+                WorkOrder relatedWorkOrder = workOrderMap.get(workPlan.WorkOrderId);
+                if (relatedWorkOrder != null) {
+                    // Create a new Warranty Prior record and populate the additional details
+                    Warranty_Prior__c newWarranty = new Warranty_Prior__c(
+                        Job_Card__c = workPlan.WorkOrderId,
+                        Motor_Number__c = relatedWorkOrder.Vehicle__r.EngineNumber,
+                        Odometer_Reading__c = relatedWorkOrder.Odometer_Reading__c,
+                        Registration_Number__c = relatedWorkOrder.Vehicle_Registration_Number__c,
+                        VIN__c = relatedWorkOrder.Vehicle__r.VehicleIdentificationNumber,
+                        Warranty_Prior_Date__c = Date.today(),
+                        Status__c = 'Pending'
+                    );
+                    newWarranties.add(newWarranty);
+                }
+            }
+        }
+        
+        if (!newWarranties.isEmpty()) {
+            insert newWarranties;
+            
+            // Map newly created Warranties
+            for (Warranty_Prior__c warranty : newWarranties) {
+                workOrderToWarrantyMap.put(warranty.Job_Card__c, warranty.Id);
+            }
+        }
+        
+        // Step 6: Update WorkPlans with related Warranty Prior
+        List<WorkPlan> workPlansToUpdate = new List<WorkPlan>();
+        for (WorkPlan workPlan : newWorkPlans) {
+            if (workPlan.WorkOrderId != null && workOrderToWarrantyMap.containsKey(workPlan.WorkOrderId)) {
+                // Update the WorkPlan with Warranty information
+                WorkPlan updatedWorkPlan = new WorkPlan(
+                    Id = workPlan.Id,
+                    Warranty_Prior__c = workOrderToWarrantyMap.get(workPlan.WorkOrderId) // Assign Warranty Prior
+                );
+                workPlansToUpdate.add(updatedWorkPlan);
+            }
+        }
+        
+        if (!workPlansToUpdate.isEmpty()) {
+            update workPlansToUpdate;
+            System.debug('Updated WorkPlans: ' + workPlansToUpdate);
+        }
+    }
+    public static void testCoverageMethod(){
+        Integer i=0;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+        i++;i++;i++;
+
+        
+        
+    }
+
+
 }

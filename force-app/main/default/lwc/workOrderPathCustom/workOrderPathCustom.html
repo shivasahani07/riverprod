@@ -1,0 +1,45 @@
+<template>
+    <lightning-card>
+        <div class="slds-grid slds-gutters">
+            <div class="slds-col slds-size_9-of-12 path">
+                <lightning-progress-indicator current-step={currentStatus} type="path" has-error={hasPendingStatus}
+                    error-text="Pending action plans exist">
+                    <template for:each={computedSteps} for:item="step">
+                        <lightning-progress-step key={step.value} label={step.label} value={step.value}
+                            data-value={step.value} onclick={handleStepClick} class={step.stepClass}>
+                        </lightning-progress-step>
+                    </template>
+                </lightning-progress-indicator>
+            </div>
+            <div class="slds-col slds-size_3-of-12">
+                <lightning-button label={footerButtonLabel} variant="brand" onclick={openModal}
+                    disabled={isFinalStatus}>
+                </lightning-button>
+            </div>
+        </div>
+        
+        <template if:true={showModal}>
+            <section class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 class="slds-modal__title">Set Job Card Status</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <lightning-combobox name="status" label="Select Status" value={selectedStep}
+                            options={statusOptions.final} onchange={handleStatusChange}>
+                        </lightning-combobox>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning-button-group>
+                            <lightning-button variant="neutral" label="Cancel" onclick={closeModal}>
+                            </lightning-button>
+                            <lightning-button variant="brand" label="Save" onclick={handleSave}>
+                            </lightning-button>
+                        </lightning-button-group>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </lightning-card>
+</template>

@@ -475,7 +475,8 @@ export default class BulkInsert_JCProducts extends NavigationMixin(LightningElem
             getDynamicValues({ productId: productId })
                 .then(result => {
                     debugger;
-                    if (result && result.price && result.productCode) {
+                    console.log('Result==>',result);
+                    if (result && (result.price !== null && result.price !== undefined) && result.productCode) {
                         this.itemList = this.itemList.map((item, idx) => {
                             if (idx == index) {
                                 return { ...item, price: result.price, productCode: result.productCode, errorMessage: '', hasError: false };
@@ -486,9 +487,14 @@ export default class BulkInsert_JCProducts extends NavigationMixin(LightningElem
                     }
                 })
                 .then(availableQuantity => {
+                    debugger;
                     this.itemList = this.itemList.map((item, idx) => {
+                        console.log('🔎 Iterating item at index:', idx, ' Expected index:', index, ' Item:', JSON.stringify(item));
+
                            if (idx == index) {
+                            console.log('🟢 Match found at index:', idx, ' Checking availableQuantity:', availableQuantity);
                                     if (availableQuantity > 0) {
+                                        console.log('✅ Quantity available. Value:', availableQuantity);
                                         return { ...item, availableQuantity, errorMessage: '', hasError: false };
                         } else if (availableQuantity === 0) {
                                          return { ...item, availableQuantity, errorMessage: 'No quantity available at this location', hasError: true };

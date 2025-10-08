@@ -15,7 +15,7 @@ public class QueueableForOTCEWIntegrationTest {
         Contact con = new Contact(LastName ='Dinesh',Phone = '7834878789',AccountId = testAccount.id);
         insert con;
         
-        Product2 testProduct = new Product2(Name = 'Test Product', IsActive = true,ProductCode='abcd',HSN_Code__c='abcd',Type__c='Vehicle',Colour__c='Black');
+        Product2 testProduct = new Product2(Name = 'Test Product', IsActive = true,ProductCode='RV-EW-1',HSN_Code__c='abcd',Type__c='Vehicle',Colour__c='Black');
         insert testProduct;
         
         Id stdPrBk = Test.getStandardPricebookId();
@@ -36,7 +36,7 @@ public class QueueableForOTCEWIntegrationTest {
         Software_Version__c testSV = new Software_Version__c(Name='Test Software Version');
         insert testSV;
         
-        Vehicle testVehicle = new Vehicle(Name='Test Vehicle', Account__c=testAccount.Id, AssetId=testAsset.Id,  VehicleDefinitionId=testVD.Id, VehicleIdentificationNumber='A2B3',  Software_Version__c=testSV.Id, Charger_PC_Number__c='abcd',PDI_Status_Pass__c=true,Purchased_Date__c = System.Today(),ChassisNumber='5342',RR_Battery_Number__c='B123',EngineNumber='E321');
+        Vehicle testVehicle = new Vehicle(Name='Test Vehicle', Account__c=testAccount.Id, AssetId=testAsset.Id,  VehicleDefinitionId=testVD.Id, VehicleIdentificationNumber='A2B3',  Software_Version__c=testSV.Id, Charger_PC_Number__c='abcd',PDI_Status_Pass__c=true,Purchased_Date__c = System.Today(),ChassisNumber='5342',Vehicle_Details__c='B123',EngineNumber='E321');
         insert testVehicle;
         
         AssetMilestone asm = new AssetMilestone(Name = 'ASM1', MilestoneDate = Date.today().addMonths(2),  Stage = 'Active', AssetId = testAsset.Id, UsageType = 'Automotive', MilestoneType = 'PDI', VehicleId = testVehicle.Id);
@@ -52,7 +52,7 @@ public class QueueableForOTCEWIntegrationTest {
         insert o;
         
         List<Id> orderIds = new List<Id>{oldOrder.Id};
-         OrderController.wrapperForEWIntegration ww = new OrderController.wrapperForEWIntegration();
+         OrderInvoiceGenerationOTCController.wrapperForEWIntegration ww = new OrderInvoiceGenerationOTCController.wrapperForEWIntegration();
                             ww.vehicleId = testVehicle.Id;
                             ww.dealerCode = testAccount.Center_Code__c;
                             ww.purchaseDate = testVehicle.Purchased_Date__c;
@@ -61,7 +61,7 @@ public class QueueableForOTCEWIntegrationTest {
                             ww.battery = testVehicle.RR_Battery_Number__c;
                             ww.engineNumber = testVehicle.EngineNumber;
                             ww.charger = testVehicle.Charger_PC_Number__c;
-        Map<Id,OrderController.wrapperForEWIntegration> wrapperValues = new Map<Id,OrderController.wrapperForEWIntegration>();
+        Map<Id,OrderInvoiceGenerationOTCController.wrapperForEWIntegration> wrapperValues = new Map<Id,OrderInvoiceGenerationOTCController.wrapperForEWIntegration>();
         wrapperValues.put(oldOrder.Id,ww);
         
         Test.setMock(HttpCalloutMock.class, new HttpCalloutMockImplEW());  
@@ -105,7 +105,7 @@ public class QueueableForOTCEWIntegrationTest {
         Contact con = new Contact(LastName ='Dinesh',Phone = '7834878789',AccountId = testAccount.id);
         insert con;
         
-        Product2 testProduct = new Product2(Name = 'Test Product', IsActive = true,ProductCode='abcd',HSN_Code__c='abcd',Type__c='Vehicle',Colour__c='Black');
+        Product2 testProduct = new Product2(Name = 'Test Product', IsActive = true,ProductCode='RV-EW-1',HSN_Code__c='abcd',Type__c='Vehicle',Colour__c='Black');
         insert testProduct;
         
         Id stdPrBk = Test.getStandardPricebookId();
@@ -126,7 +126,7 @@ public class QueueableForOTCEWIntegrationTest {
         Software_Version__c testSV = new Software_Version__c(Name='Test Software Version');
         insert testSV;
         
-        Vehicle testVehicle = new Vehicle(Name='Test Vehicle', Account__c=testAccount.Id, AssetId=testAsset.Id,  VehicleDefinitionId=testVD.Id, VehicleIdentificationNumber='A2B3',  Software_Version__c=testSV.Id, Charger_PC_Number__c='abcd',PDI_Status_Pass__c=true,Purchased_Date__c = System.Today(),ChassisNumber='5342',RR_Battery_Number__c='B123',EngineNumber='E321');
+        Vehicle testVehicle = new Vehicle(Name='Test Vehicle', Account__c=testAccount.Id, AssetId=testAsset.Id,  VehicleDefinitionId=testVD.Id, VehicleIdentificationNumber='A2B3',  Software_Version__c=testSV.Id, Charger_PC_Number__c='abcd',PDI_Status_Pass__c=true,Purchased_Date__c = System.Today(),ChassisNumber='5342',Vehicle_Details__c='B123',EngineNumber='E321');
         insert testVehicle;
         
         AssetMilestone asm = new AssetMilestone(Name = 'ASM1', MilestoneDate = Date.today().addMonths(2),  Stage = 'Active', AssetId = testAsset.Id, UsageType = 'Automotive', MilestoneType = 'PDI', VehicleId = testVehicle.Id);
@@ -142,7 +142,7 @@ public class QueueableForOTCEWIntegrationTest {
         insert o;
         
         List<Id> orderIds = new List<Id>{oldOrder.Id};
-         OrderController.wrapperForEWIntegration ww = new OrderController.wrapperForEWIntegration();
+         OrderInvoiceGenerationOTCController.wrapperForEWIntegration ww = new OrderInvoiceGenerationOTCController.wrapperForEWIntegration();
                             ww.vehicleId = testVehicle.Id;
                             ww.dealerCode = testAccount.Center_Code__c;
                             ww.purchaseDate = testVehicle.Purchased_Date__c;
@@ -151,7 +151,7 @@ public class QueueableForOTCEWIntegrationTest {
                             ww.battery = testVehicle.RR_Battery_Number__c;
                             ww.engineNumber = testVehicle.EngineNumber;
                             ww.charger = testVehicle.Charger_PC_Number__c;
-        Map<Id,OrderController.wrapperForEWIntegration> wrapperValues = new Map<Id,OrderController.wrapperForEWIntegration>();
+        Map<Id,OrderInvoiceGenerationOTCController.wrapperForEWIntegration> wrapperValues = new Map<Id,OrderInvoiceGenerationOTCController.wrapperForEWIntegration>();
         wrapperValues.put(oldOrder.Id,ww);
         
         Test.setMock(HttpCalloutMock.class, new HttpCalloutMockImplEWFprfailure());  

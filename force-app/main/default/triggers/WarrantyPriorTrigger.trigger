@@ -1,7 +1,8 @@
 trigger WarrantyPriorTrigger on Warranty_Prior__c (before update,after update) {
     if (Trigger.isAfter && Trigger.isUpdate) {
-        WarrantyPriorTriggerHandler.creatClaimLineItemPartJobsAdded(Trigger.new, Trigger.oldMap);
-        WarrantyPriorTriggerHandler.handleWarrantyApproval(Trigger.new, Trigger.oldMap);
+       // WarrantyPriorTriggerHandler.creatClaimLineItemPartJobsAdded(Trigger.new, Trigger.oldMap);
+       // WarrantyPriorTriggerHandler.handleWarrantyApproval(Trigger.new, Trigger.oldMap);
+          WarrantyPriorTriggerHandler.createClaimAndClaimItem(Trigger.new, Trigger.oldMap); 
         
         // WarrantyPriorTriggerHandler.sendNotificationToDealer(Trigger.new,Trigger.oldMap);
     }

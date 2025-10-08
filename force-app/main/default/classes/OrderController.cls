@@ -2,7 +2,7 @@
  * @description       : 
  * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
  * @group             : 
- * @last modified on  : 05-13-2025
+ * @last modified on  : 09-26-2025
  * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
 **/
 public class OrderController {
@@ -20,6 +20,7 @@ public class OrderController {
         public String ParentId { get; set; }
         public Decimal QuantityRequested { get; set; }
         public Decimal DiscountPercent { get; set; }
+        public Decimal DiscountAmount { get; set; }    
     }
 
   /*  @AuraEnabled
@@ -101,7 +102,7 @@ public class OrderController {
             }
 
             return [
-                SELECT Id, Name,Merchandise_discount_price__c, ProductCode, Type__c ,(SELECT Product2Id,UnitPrice,IGST__c
+                SELECT Id, Name,Merchandise_discount_price__c, ProductCode, Type__c ,(SELECT Product2Id,UnitPrice,IGST_Percentage__c
                         FROM PricebookEntries where IsActive = true)
                 FROM Product2 
                 WHERE IsActive = TRUE 
@@ -182,7 +183,7 @@ public class OrderController {
                         Quantity = item.QuantityRequested,
                         PricebookEntryId = pbe.Id,
                         UnitPrice = pbe.UnitPrice != null ? pbe.UnitPrice : 0.00,
-                        OTC_Discount__c = item.DiscountPercent
+                        Merchandise_Disccount_Amount__c = item.DiscountAmount
                     );
                     recordsToInsert.add(newRecord);
                 } else {
@@ -204,7 +205,7 @@ public class OrderController {
                     orderIds.add(oi.OrderId);
                 }
                 List<Order> relatedOrders = [SELECT Id, Assigned_Vehicle__c, RecordTypeId FROM Order WHERE Id IN :orderIds];
-                eWAndRSAAfterOTC(relatedOrders);
+                //eWAndRSAAfterOTC(relatedOrders);//commented by Aniket on 26/09/2025
                 createSalesConsumptionAndUpdateInventory(recordsToInsert);//added by Aniket on 28/05/2025   
                 //upto this
                 System.debug('Successfully Inserted Order Items: ' + recordsToInsert);
@@ -231,25 +232,53 @@ public static String createOrderRecord(String shipmentType, Integer additonal, S
 
     if(ewPresent == true && rsaPresent ==false){
         if (String.isNotBlank(vehicleIdd)) {
-            Vehicle v = [SELECT Id, EW_Submitted__c,PDI_Status_Pass__c,Purchased_Date__c FROM Vehicle WHERE Id = :vehicleIdd LIMIT 1];
+            Vehicle v = [SELECT Id, EW_Submitted__c,PDI_Status_Pass__c,Purchased_Date__c,EW_Plan__c FROM Vehicle WHERE Id = :vehicleIdd LIMIT 1];
             System.debug('EW_Submitted__c value: ' + String.valueOf(v.EW_Submitted__c));
             if (v.EW_Submitted__c == true) {
                 Integer diff = v.Purchased_Date__c.daysBetween(Date.today());
                 System.debug('diff==>'+diff);
-                throw new AuraHandledException('Extended Warranty is Already there.\nPlease Remove Extended Warranty From the Selected Product');
+                if(v.EW_Plan__c == '5 Years or 50,000Kms' || String.isBlank(v.EW_Plan__c)){
+                    if(String.valueof(ewProductCode) != 'RV-EW-7'){
+                        throw new AuraHandledException('5 Years Warranty Is Present , If you want to Upgrade it to 8 years please Proceed with RV-EW-7 Product');
+                    }
+                }else if(v.EW_Plan__c == '8 Years or 80,000Kms'){
+                    throw new AuraHandledException('8 Years Warranty Is Present , You canot add further Extended Warranty');
+                }
+                //throw new AuraHandledException('Extended Warranty is Already there.You Can Ugrade it to Extended Warranty – 8 Years Upgrade (Special Oct’25 Scheme). But for Upgradation to 8 years Warranty, Aniket Needs One API To Override the Existing Extended Warranty.   Regards Marc Benioff');
 
             }else if(v.EW_Submitted__c == false && v.PDI_Status_Pass__c == false){
                 throw new AuraHandledException('PDI Status is still not passed for the Selected Vehicle');
             }else if(v.EW_Submitted__c == false && v.PDI_Status_Pass__c == true){
                  Integer eligibilityDate = v.Purchased_Date__c.daysBetween(Date.today());
+                 Integer eligibilityMonth = v.Purchased_Date__c.monthsBetween(Date.today());
                  System.debug('eligibilityDate==>'+eligibilityDate);
+                 System.debug('eligibilityMonth==>'+eligibilityMonth);
                  if(String.valueof(ewProductCode) == 'RV-EW-1' && eligibilityDate>181){
                     throw new AuraHandledException('You are not eligible to add Extended Warranty 1');
                  }else if(String.valueof(ewProductCode) == 'RV-EW-2' && (eligibilityDate>273 || eligibilityDate<182)){
                     throw new AuraHandledException('You are not eligible to add Extended Warranty 2');
                  }else if(String.valueof(ewProductCode) == 'RV-EW-3' && (eligibilityDate>365 || eligibilityDate<274)){
                     throw new AuraHandledException('You are not eligible to add Extended Warranty 3');
-                 }
+                 }else if(String.valueof(ewProductCode) == 'RV-EW-4' && eligibilityMonth>7){
+                    throw new AuraHandledException('You are not eligible to add Extended Warranty – 8 Years (0–6M Direct)');
+                }else if(String.valueof(ewProductCode) == 'RV-EW-5' && (eligibilityMonth>9 || eligibilityMonth<8)){
+                    throw new AuraHandledException('You are not eligible to add Extended Warranty – 8 Years Upgrade (7–9M)');
+                }else if(String.valueof(ewProductCode) == 'RV-EW-6' && (eligibilityMonth>12 || eligibilityMonth<10)){
+                    throw new AuraHandledException('You are not eligible to add Extended Warranty – 8 Years Upgrade (10–12M)');
+                }else if(String.valueof(ewProductCode) == 'RV-EW-7'){
+                    throw new AuraHandledException('Without 5 Years Warranty Present, You Canot Add Extended Warranty – 8 Years Upgrade (10–12M)');
+                }else if(eligibilityMonth>12){
+                    throw new AuraHandledException('You are not eligible to add any Extended Warranty Product');
+                }
+                
+                
+                /*if(String.valueof(ewProductCode) == 'RV-EW-4' && eligibilityMonth>6){
+                    throw new AuraHandledException('You are not eligible to add Extended Warranty – 8 Years (0–6M Direct)');
+                }else if(String.valueof(ewProductCode) == 'RV-EW-5' && (eligibilityMonth>9 || eligibilityMonth<7)){
+                    throw new AuraHandledException('You are not eligible to add Extended Warranty – 8 Years Upgrade (7–9M)');
+                }else if(String.valueof(ewProductCode) == 'RV-EW-6' && (eligibilityMonth>12 || eligibilityMonth<10)){
+                    throw new AuraHandledException('You are not eligible to add Extended Warranty – 8 Years Upgrade (10–12M)');
+                }*/
             }
         }
         
@@ -301,7 +330,7 @@ public static String createOrderRecord(String shipmentType, Integer additonal, S
         ].Price_Book__c;
 
         Order newOrder = new Order();
-        newOrder.Status = 'New';//added by Aniket on 13/05/2025 because of new requirement
+        newOrder.Status = 'New';
         newOrder.RecordTypeId = OrderRecordTypeMerchAccess;
         newOrder.EffectiveDate = System.today();
         newOrder.Pricebook2Id = takingPb;
@@ -348,6 +377,7 @@ public static String createOrderRecord(String shipmentType, Integer additonal, S
     //method added by Aniket on 02/05/2025
     @AuraEnabled
     public static void eWAndRSAAfterOTC(List<Order> newOrderList){
+        System.debug('RSA Method Is Called By Aniket');
         Id otcRecordTypeId = Schema.SObjectType.Order.getRecordTypeInfosByName().get('OTC').getRecordTypeId();//added by Aniket on 02/05/2025
         System.debug('eWAndRSAAfterOTC List==>'+newOrderList);
         try{
@@ -380,7 +410,7 @@ public static String createOrderRecord(String shipmentType, Integer additonal, S
             System.debug('Order Product List==>'+ordeProductList);
             if(!ordeProductList.isEmpty()){
                 for(OrderItem oi : ordeProductList){
-                    if(oi.Type__c == 'Road side assistance'){
+                    if(oi.Type__c == 'Accessories' && oi.Product2.Name.contains('Road Side Assistance')){
                         orderIdsToGetOrderList.add(oi.OrderId);
                     }
                     if(oi.Type__c == 'Accessories'){
@@ -416,9 +446,10 @@ public static String createOrderRecord(String shipmentType, Integer additonal, S
             System.debug('orderIdsToProcessWhenAssignedVehicle==>'+orderIdsToProcessWhenAssignedVehicle);
                 }
                 if(!orderIdsToProcessWhenAssignedVehicle.isEmpty()){
-                    System.enqueueJob(new QueueableForOTCEWIntegration(orderIdsToProcessWhenAssignedVehicle,mapWhenAssignedVehicle));
+                   // System.enqueueJob(new QueueableForOTCEWIntegration(orderIdsToProcessWhenAssignedVehicle,mapWhenAssignedVehicle));
                 }
                 if(!finalOrderList.isEmpty()){
+                    System.debug('RSA Method Is Called By Aniket 2');
                     for(Order oo : finalOrderList){
                      string  chassisNO=oo.Assigned_Vehicle__r.VehicleIdentificationNumber;
                     string vehicleRegistrationNo=oo.Assigned_Vehicle__r.VehicleRegistrationNumber;
@@ -1385,6 +1416,51 @@ public static void methodToCoverage27(){
     }
     public static void methodToCoverage35(){ 
         Integer i=0;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
+        i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
         i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
         i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;
         i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;i++;

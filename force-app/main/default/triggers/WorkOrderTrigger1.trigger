@@ -43,4 +43,9 @@ trigger WorkOrderTrigger1 on WorkOrder (before insert, before update, after upda
         //PSFController.sendWhatsAppMessageWithFeedbackUrl(Trigger.new, Trigger.oldMap);    
         WorkOrderWhatsAppHandler.sendWhatsAppMsgMethod(Trigger.new, Trigger.oldMap);//added by Aniket on 17/06/2025
     }
+     //added by Ram 15/07/2025
+
+	if (Trigger.isUpdate && Trigger.isBefore) {
+        JobCardValidationHandler.validateJobCardStatus(Trigger.new, Trigger.oldMap);
+    }
 }

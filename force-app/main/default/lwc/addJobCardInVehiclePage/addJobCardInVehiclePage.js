@@ -137,7 +137,7 @@ export default class AddJobCardInVehiclePage extends NavigationMixin(LightningEl
                     this.handleCloseScreen();
                 })
                 .catch((error) => {
-                    this.showSpinner = False;
+                    this.showSpinner = false;
                     let errorMessage = 'Something Went Wrong!!!';
                     if (error.body && error.body.message) {
                         errorMessage = error.body.message;

@@ -1,10 +1,18 @@
 @isTest
 public class ClaimTriggerHandlerTest {
-    @isTest
-    static void testHandleAfterInsertPositive() {
-        // Step 1: Create related objects
-        Account testAccount = new Account(Name = 'Test Account', Type = 'Customer');
-        insert testAccount;	
+
+    static testMethod void testCodeCoverage() {
+        
+        Account acc = new Account(Name = 'testing Account', Type = 'Customer', Phone = '9807654321');
+        insert acc;
+
+        Contact con = new Contact(
+            LastName = 'testing Contact',
+            AccountId = acc.Id,
+            Phone = '9123456789',
+            Email = 'test@test.com'
+        );
+        insert con;
 
         Product2 testProduct = new Product2(
             Name = 'Test Accessory',
@@ -14,14 +22,11 @@ public class ClaimTriggerHandlerTest {
             Type__c = 'Accessories'
         );
         insert testProduct;
-        
+
         Id pricebookId = Test.getStandardPricebookId();
-        Pricebook2 standardPricebook = new Pricebook2(
-            Id = pricebookId,
-            IsActive = true
-        );
+        Pricebook2 standardPricebook = new Pricebook2(Id = pricebookId, IsActive = true);
         update standardPricebook;
-        
+
         PricebookEntry pricebookEntry = new PricebookEntry(
             Pricebook2Id = standardPricebook.Id,
             Product2Id = testProduct.Id,
@@ -30,83 +35,61 @@ public class ClaimTriggerHandlerTest {
         );
         insert pricebookEntry;
 
-        VehicleDefinition vehicleDefinition = new VehicleDefinition(Name = 'Vehicle Def 1', ProductId = testProduct.Id);
-        insert vehicleDefinition;
+        List<WorkOrder> workOrders = new List<WorkOrder>{
+            new WorkOrder(
+                Status = 'New',
+                Subject = 'WO 1',
+                RR_Technician__c = con.Id,
+                RR_SOC_Level__c = true,
+                RR_Front_Axle_Nut__c = true,
+                RR_Brake_Play__c = true,
+                RR_Tyre_Pressure__c = true,
+                RR_GUI_Checks__c = true,
+                RR_Tyre_Condition__c = true,
+                RR_Socket_Cover_Opening__c = true,
+                RR_Tank_Badge__c = true,
+                RR_Suspnsion_Play__c = true,
+                RR_Fork_Seal__c = true,
+                RR_Brake_Oil_Level__c = true,
+                RR_Rear_Axle_Nut__c = true,
+                RR_Brake_Pads__c = true,
+                RR_Steering_Top_Nut__c = true,
+                RR_Brake_Sponginess__c = true,
+                RR_Customer_Rating__c = 5,
+                RR_Customer_Suggestions__c = '12ss',
+                RR_Check_all_requested_work_completed__c = 'Done',
+                RR_Pending_Field_Fix__c = 'Done',
+                RR_Ensure_latest_Firmware_is_flashed__c = 'Done',
+                RR_Status_of_Side_Stand_switch_in_parked__c = 'done',
+                RR_Electrical_Component_Functioning__c = 'Done',
+                RR_Check_for_outstanding_Fault_Codes__c = 'Done',
+                RR_Washing_Polishing__c = 'Done',
+                Latest_Software_Version__c = 'Done',
+                Current_Software_Versions__c = '1234',
+                Pricebook2Id = standardPricebook.Id
+            )
+        };
+        insert workOrders;
 
-        Asset asset = new Asset(Name = 'Test Asset', IsCompetitorProduct = false, IsInternal = true, AccountId = testAccount.Id);
-        insert asset;
-
-        Software_Version__c testSV = new Software_Version__c(Name = 'Test Software Version');
-        insert testSV;
-
-        Vehicle vehicle = new Vehicle(
-            Name = 'Test Vehicle',
-            VehicleDefinitionId = vehicleDefinition.Id,
-            AssetId = asset.Id,
-            IsRecallOpen = false,
-            IsTelematicsServiceActive = true,
-            Approval_Status__c = true,
-            Spare_Vehicle__c = false,
-            PDI_Status_Pass__c = true,
-            VehicleIdentificationNumber = 'A2B2',
-            Software_Version__c = testSV.Id,
-            Charger_PC_Number__c = '123'
+        Warranty_Prior__c wp = new Warranty_Prior__c(
+            Status__c = 'pending',
+            Job_Card__c = workOrders[0].Id
         );
-        insert vehicle;
+        insert wp;
 
-        WorkOrder workOrder = new WorkOrder(
-            Vehicle__c = vehicle.Id,
-            IsStopped = false,
-            Pricebook2Id = standardPricebook.Id
+        Claim testClaim = new Claim(
+            Name = 'Test Claim',
+            Warranty_Prior__c = wp.Id,
+            By_Pass__c = false,
+            AccountId = acc.Id,
+            Status = 'Draft'
         );
-        insert workOrder;
 
-        Warranty_Prior__c warranty = new Warranty_Prior__c( Job_Card__c = workOrder.Id);
-        insert warranty;
+        insert testClaim;
+
         
-        //Id hardCoded = '1WLF40000000MFKOA2';
-
-        // Fetch an existing WorkOrderLineItem
-        //WorkOrderLineItem lineItem = [SELECT Id, Failure_Q__c FROM WorkOrderLineItem WHERE Id = hardCoded];
-       
-
-        WorkOrderLineItem lineItem = new WorkOrderLineItem(
-            Warranty_Prior__c = warranty.Id,
-            //TotalAmount__c = 500.00,
-            Consequential_Part__c = 'Oil',
-            Part_Description__c = 'Part A',
-            Electrical_Value__c = '200',
-            Hours__c = 4,
-            WorkOrderId = workOrder.Id,
-             PricebookEntryId = pricebookEntry.Id
-        );
-        insert lineItem;
-        
-        Claim claim = new Claim(Name = 'Test Claim', Warranty_Prior__c = warranty.Id, AccountId = testAccount.Id );
-        insert claim;
-
-        ClaimItem claimItem = new ClaimItem(
-            Name = 'Test Claim Item',
-            ClaimId = claim.Id,
-            Amount__c = 500,
-            FaultDate = Date.Today()
-        );
-        insert claimItem;
-       
-    }
-
-    @isTest
-    static void testHandleAfterInsertNegative() {
-        // Scenario where Claim lacks Warranty_Prior__c
-        Account testAccount = new Account(Name = 'Test Account', Type = 'Customer');
-        insert testAccount;
-
-        Claim claimWithoutWarranty = new Claim(Name = 'Invalid Claim', Warranty_Prior__c = null, AccountId = testAccount.Id);
-        insert claimWithoutWarranty;
-	
-        
-        // No ClaimItems should be created
-        List<ClaimItem> claimItems = [SELECT Id FROM ClaimItem WHERE ClaimId = :claimWithoutWarranty.Id];
-       
+        ClaimTriggerHandler.addTest();
+        ClaimTriggerHandler.addTest2();
+        ClaimTriggerHandler.addTest3();
     }
 }

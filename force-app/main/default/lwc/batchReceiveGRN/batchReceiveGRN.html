@@ -11,6 +11,8 @@
                     <tr>
                         <th scope="col">Claim No.</th>
                         <th scope="col">Claim Item Number</th>
+                         <th scope="col">Product Name</th>
+                         <th scope="col">Product Code</th>
                         <th scope="col">Part No</th>
                         <th scope="col">HSN Code</th>
                         <th scope="col">Warranty Type</th>
@@ -26,6 +28,18 @@
                         <tr key={ClaimItem.Id}>
                             <td style="font-family: 'Arial', sans-serif; font-size: 14px; ">{ClaimItem.Claim.Name}</td>
                             <td style="font-family: 'Arial', sans-serif; font-size: 14px; ">{ClaimItem.Claim_Item_Number__c}</td>
+                             <td style="font-family: 'Arial', sans-serif; font-size: 14px; "><template if:true={ClaimItem.Product_Name__c}>
+                                                                                            {ClaimItem.Product_Name__c}
+                                                                                            </template>
+                                                                                            <template if:false={ClaimItem.Product_Name__c}>
+                                                                                            <span style="color: red;">No Part Tagged</span>
+                                                                                            </template></td>
+                            <td style="font-family: 'Arial', sans-serif; font-size: 14px; "><template if:true={ClaimItem.Product_Code__c}>
+                                                                                            {ClaimItem.Product_Code__c}
+                                                                                            </template>
+                                                                                            <template if:false={ClaimItem.Product_Name__c}>
+                                                                                            <span style="color: red;">No Part Tagged</span>
+                                                                                            </template></td>
                             <td style="font-family: 'Arial', sans-serif; font-size: 14px; ">{ClaimItem.Part__r.LineItemNumber}</td>
                             <td style="font-family: 'Arial', sans-serif; font-size: 14px; ">{ClaimItem.Part__r.HSN_Code__c}</td>
                             <td style="font-family: 'Arial', sans-serif; font-size: 14px; ">{ClaimItem.Claim.ClaimType}</td>

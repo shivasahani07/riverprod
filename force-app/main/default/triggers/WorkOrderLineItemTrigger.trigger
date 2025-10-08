@@ -1,4 +1,4 @@
-trigger WorkOrderLineItemTrigger on WorkOrderLineItem (after insert, after update, after delete, before Update, before Delete) {
+trigger WorkOrderLineItemTrigger on WorkOrderLineItem (after insert, after update, after delete, before Update, before Delete, before Insert) {
    // Handle "before insert" logic (if needed in the future)
    // if (Trigger.isBefore) {
         //if (Trigger.isInsert) {
@@ -23,11 +23,14 @@ trigger WorkOrderLineItemTrigger on WorkOrderLineItem (after insert, after updat
     } 
     
     //Added By Ram 24/06/2025
-    /*if(trigger.IsBefore && trigger.IsUpdate){
-        WorkOrderLineItemTrgHandler1.PreventUpdateForJobCardStatus(trigger.new);
+    if(trigger.IsBefore && trigger.IsUpdate){
+        JobCardRecordLock.PreventUpdateForJobCardStatus(trigger.new);
+    }
+    if(trigger.IsBefore && trigger.IsInsert){
+        JobCardRecordLock.PreventUpdateForJobCardStatus(trigger.new);
     }
     //Added By Ram 24/06/2025
     if(trigger.IsBefore && trigger.IsDelete){
-        WorkOrderLineItemTrgHandler1.PreventUpdateForJobCardStatus(trigger.old);
-    }*/
+        JobCardRecordLock.PreventUpdateForJobCardStatus(trigger.old);
+    }
 }

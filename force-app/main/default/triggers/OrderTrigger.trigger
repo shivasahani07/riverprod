@@ -45,6 +45,8 @@ Trigger OrderTrigger on Order (before insert, after update, after insert, before
             break; 
         }
     }
+        OrderInvoiceGenerationOTCController.eWAndRSACallout(Trigger.new, Trigger.oldMap);//added by Aniket on 19/09/2025
+        ExtendedWarrantyForVehicleOrder.punchOTCMethod(Trigger.new,Trigger.oldMap);//added by Aniket on 19/09/2025
     }
 
     if(Trigger.isAfter && Trigger.isInsert){

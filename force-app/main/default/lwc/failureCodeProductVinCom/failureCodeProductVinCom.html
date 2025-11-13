@@ -1,0 +1,142 @@
+<template>
+    <lightning-card title="Failure Codes" icon-name="custom:custom63">
+        <div class="custom-table">
+            <div class="">
+                <table class="">
+                    <thead>
+                        <tr class="">
+                            <th>
+                                <lightning-input type="search" onchange={filterOnchage} name="failureCode"
+                                    label="Search by Failure code" value={filters.failureCode}>
+                                </lightning-input>
+                            </th>
+                            <th>
+                                <lightning-input type="search" onchange={filterOnchage} name="codeValue"
+                                    label="Search by Code" value={filters.codeValue}>
+                                </lightning-input>
+                            </th>
+                            <th>
+                                <lightning-input type="search" onchange={filterOnchage} name="VINCutoff"
+                                    label="Search by VIN code" value={filters.VINCutoff}>
+                                </lightning-input>
+                            </th>
+                            <th>
+                                <lightning-combobox name="typeFilter" label="Filter by Type" value={filters.typeFilter} class="dropdowncss" label-stacked
+                                    options={typeOptions} onchange={filterOnchage}>
+                                </lightning-combobox>
+                            </th>
+                            <th>
+                                <!-- <lightning-button-icon icon-name="utility:settings"  alternative-text="Settings" title="Settings" onclick={apexRefresh}></lightning-button-icon> -->
+                                <!-- <span style="margin-top:10px">
+                                     <lightning-icon icon-name='utility:refresh' alternative-text='refresh' variant='warning' size='medium' title='refresh'  onclick={apexRefresh} label="refresh"></lightning-icon>
+
+                                </span> -->
+                            </th>
+                            <th class="slds-m-top_large" style="padding-top: 30px;">
+                                <lightning-button-menu alternative-text="Add Failure Code" variant="success"
+                                    onselect={handleAddFailureCode} menu-alignment="auto">
+                                    <lightning-menu-item label="Add Product Failure Code" value="product">
+                                    </lightning-menu-item>
+                                    <lightning-menu-item label="Add Labour Failure Code" value="labour">
+                                    </lightning-menu-item>
+                                </lightning-button-menu>
+                            </th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+
+            <template if:true={hasData}>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Required Sample</th>
+                            <th>Sample Collected</th>
+                            <th>Active?</th>
+                            <th>Causal Item Name</th>
+                            <th>Causal Item Code</th>
+                            <th>VIN Cut Off</th>
+                            <th>VIN Cut Off Attached</th>
+                            <th>Created By</th>
+                            <th>Created Date</th>
+                            <th style="width: 160px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={pageData} for:item="fc">
+                            <tr key={fc.Id}>
+                                <td>{fc.Name}</td>
+                                <td>{fc.Type}</td>
+                                <td>{fc.BatchSize}</td>
+                                <td>{fc.SampleCollected}</td>
+                                <td>
+                                    <span class={fc.isActiveClass}>{fc.isActiveLabel}</span>
+                                </td>
+                                <td>{fc.CausalName}</td>
+                                <td>{fc.CausalCode}</td>
+                                <td>{fc.VinStart}</td>
+                                <td>
+                                    <span class={fc.vinActiveClass}>{fc.vinActiveLabel}</span>
+                                </td>
+                                <td>{fc.CreatedBy}</td>
+                                <td>
+                                    <lightning-formatted-date-time value={fc.CreatedDate}>
+                                    </lightning-formatted-date-time>
+                                </td>
+                                <td>
+                                    <lightning-button-group>
+                                        <lightning-button variant="brand" label="View" title="View Record"
+                                            onclick={handleView} data-id={fc.Id}>
+                                        </lightning-button>
+                                        <!-- <lightning-button variant="brand" label="Edit" title="Edit Record"
+                                            onclick={handleEdit} data-id={fc.Id}>
+                                        </lightning-button>
+
+                                        <lightning-button variant="brand" label="+Labour" title="Add Labour Record"
+                                            onclick={addLabourCode} data-id={fc.Id}>
+                                        </lightning-button> -->
+                                    </lightning-button-group>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+
+                 <c-pagination
+                    records={OrignalData}
+                     total-records={totalRecords}
+                    onpagechange={handlePageChange}>
+                </c-pagination>
+            </template>
+
+            <template if:true={error}>
+                <p class="slds-p-around_medium">Error loading data: {error}</p>
+            </template>
+
+            <template if:false={hasData}>
+                <p class="slds-p-around_medium">No Failure Codes found.</p>
+            </template>
+
+            <template if:true={isShowModalPopup}>
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                    aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                    <div class="slds-modal__container">
+                        <div class="slds-modal__content" id="modal-content-id-1">
+                            <template if:true={componentConstructor}>
+                                <lwc:component lwc:is={componentConstructor} lwc:ref="myCmp" lwc:spread={childProps}>
+                                </lwc:component>
+                            </template>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <button class="slds-button slds-button_neutral slds-right-p_small"
+                                onclick={hideModalBox}>Cancel</button>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

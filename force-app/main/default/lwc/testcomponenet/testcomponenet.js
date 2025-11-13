@@ -770,6 +770,7 @@ export default class Testcomponenet extends NavigationMixin(LightningElement) {
                         this.handleSuccessClick(message);
                     })
             } else {
+
                 this.handleErrorClick();
             }
         } else {
@@ -1521,6 +1522,7 @@ handleNext() {
 
     
     newfollowupsubmit() {
+        debugger;
         console.log('newfollowupsubmit');
         if (this.newfollowupdate == null) {
             console.log('null value');
@@ -1528,6 +1530,7 @@ handleNext() {
             if (this.newfollowupdate < this.todaysDate) {
                 //this.todaysDate
             } else {
+                debugger;
                 createnewfollowup({ leadid: this.selectedrow.Veiw_lead, followupdate: this.newfollowupdate, feedbackvalue: this.newFollowupfeedbck })
                     .then(result => {
                         console.log('sucess');
@@ -1546,7 +1549,7 @@ handleNext() {
 
                     })
                     .catch(error => {
-                        console.log('error====');
+                        console.log('error====',JSON.stringify(error));
                         this.handleErrorClick();
                     })
             }
@@ -1844,6 +1847,7 @@ handleNext() {
                     })
                     .catch(error => {
                         console.log('error' + error);
+                        console.log('error=====>',JSON.stringify(error));
                         this.handleErrorClick();
                     })
             }

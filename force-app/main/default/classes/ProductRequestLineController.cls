@@ -230,7 +230,7 @@ public Without Sharing class ProductRequestLineController {
     // LWC CreatePurchaseOrderForm and AddProductRequestLiteItem
     // Method for Get All PORL from Location from that Product Inventory
     @AuraEnabled(Cacheable = true)
-    public static List<Product2> getLogedInUserRelatedLocationPOLI(String loggedInUserId, String productTypeFilter) {
+    public static List<ProductRequestLineController.ProductWithQty> getLogedInUserRelatedLocationPOLI(String loggedInUserId, String productTypeFilter) {
         System.debug('loggedInUserId == >' + loggedInUserId);
         System.debug('productTypeFilter == >' + productTypeFilter);
         List<PricebookEntry> getProdItemList = new List<PricebookEntry>();
@@ -242,7 +242,7 @@ public Without Sharing class ProductRequestLineController {
         
         try {
             if (loggedInUserId != null) {
-                logedUser = [SELECT Id, Contact.Name, ContactId FROM User WHERE Id = :loggedInUserId LIMIT 1];
+                logedUser = [SELECT Id, Contact.Name, ContactId,Contact.Location__c FROM User WHERE Id = :loggedInUserId LIMIT 1];
                 System.debug('logedUser==>'+logedUser);
                 if (logedUser.ContactId != null) {
                     loggedInUserContactRecord = [SELECT Id, Name, Role_Type__c, Location__r.Price_Book__c FROM Contact WHERE Id = :logedUser.ContactId LIMIT 1];
@@ -275,23 +275,84 @@ public Without Sharing class ProductRequestLineController {
                 
             }
             
-            getProdItemList = [SELECT Id, Product2.Name, Product2Id FROM PricebookEntry WHERE Pricebook2Id = :loggedInUserContactRecord.Location__r.Price_Book__c];
+            getProdItemList = [SELECT Id, Product2.Name, Product2Id,UnitPrice, Dealer_List_Price__c FROM PricebookEntry WHERE Pricebook2Id = :loggedInUserContactRecord.Location__r.Price_Book__c];
             
             if (getProdItemList.size() > 0) {
                 for (PricebookEntry prod : getProdItemList) {
                     if (prod.Product2Id != null) {
                         Product2IdIdSet.add(prod.Product2Id);
+                        //uniTPriceMap.put(prod.Product2Id, prod.Dealer_List_Price__c != null ? prod.Dealer_List_Price__c : 0);
                     }
                 }
                 
                 if (Product2IdIdSet.size() > 0) {
                     System.debug('Product2IdIdSet ==>'+Product2IdIdSet);
-                    getLocationRelatedPRLI = [SELECT Id, Name, ProductCode, IsActive, Type__c FROM Product2 WHERE Id IN :Product2IdIdSet AND IsActive = true AND Type__c NOT IN :ProductTypeNotToShow];
+                    
+                    getLocationRelatedPRLI = [SELECT Id, Name, ProductCode, IsActive, Type__c, IGST_Percentage__c, CGST_Percentage__c, SGST_Percentage__c
+                        FROM Product2 WHERE Id IN :Product2IdIdSet AND IsActive = true AND Type__c NOT IN :ProductTypeNotToShow];
+                    //Added on 09/10/2025 By Aniket
+                    User u = [SELECT Id,Contact.Location__r.State__c FROM User WHERE Id=:UserInfo.getUserId() LIMIT 1];
+                    Set<Id> pricebookIds = new Set<Id>();
+                    List<Pricebook2> price = [SELECT Id,State__c FROM Pricebook2 WHERE State__c=:u.Contact.Location__r.State__c];//Added By Aniket On 09/20/2025
+                    for(Pricebook2 pp : price){
+                        pricebookIds.add(pp.Id);
+                    }
+                    System.debug('pricebookIds==>'+pricebookIds);
+                    List<PricebookEntry> pricebookEntries = [SELECT Id, Product2Id, Pricebook2Id,CGST__c,IGST__c,SGST__c,UnitPrice,Dealer_List_Price__c,Product2.ProductCode FROM PricebookEntry WHERE Pricebook2Id IN:pricebookIds AND Product2Id IN :Product2IdIdSet];
+                    System.debug('pricebookEntries For Debug=>'+pricebookEntries);
+                    Map<Id,Decimal> igstMap = new Map<Id,Decimal>();
+                    Map<Id,Decimal> uniTPriceMap = new Map<Id,Decimal>();
+                    for(PricebookEntry pe : pricebookEntries){
+                        igstMap.put(pe.Product2Id,pe.IGST__c);
+                        uniTPriceMap.put(pe.Product2Id, pe.Dealer_List_Price__c != null ? pe.Dealer_List_Price__c : 0);
+                    }
+                    System.debug('uniTPriceMap==>'+uniTPriceMap);
+                    //Upto here
+                    
+                    List<ProductItem> inventoryList= [SELECT Id,LocationId,Product2Id,Quantity_In_Hand__c FROM ProductItem WHERE Product2Id IN:Product2IdIdSet AND LocationId =:logedUser.Contact.Location__c];
+                    System.debug('inventoryList==>'+inventoryList);
+                    System.debug('inventoryList size ==>'+inventoryList.size());
+                    Map<Id, Decimal> productQtyMap = new Map<Id, Decimal>();
+
+                    for (ProductItem pi : inventoryList) {
+                        productQtyMap.put(pi.Product2Id, pi.Quantity_In_Hand__c);
+                    }
+                    List<ProductRequestLineController.ProductWithQty> result = new List<ProductRequestLineController.ProductWithQty>();
+                    
+                    for (Product2 p : getLocationRelatedPRLI) {
+                        ProductWithQty pwq = new ProductWithQty();
+                        pwq.productId = p.Id;
+                        pwq.name = p.Name;
+                        pwq.productCode = p.ProductCode;
+                        pwq.typeOfProduct = p.Type__c;
+                        pwq.unitPrice = uniTPriceMap.containsKey(p.Id) ? uniTPriceMap.get(p.Id) : 0;
+                        pwq.quantityInHand = productQtyMap.containsKey(p.Id) ? productQtyMap.get(p.Id) : 0;
+                        //pwq.igstPercentage = p.IGST_Percentage__c != null ? p.IGST_Percentage__c : null;
+                        //pwq.igstPercentage = igstMap.get(p.Id);
+                        pwq.igstPercentage = (igstMap.get(p.Id) != null) ? igstMap.get(p.Id) : 0;
+                        result.add(pwq);
+                    }
+                    
+                    System.debug('result==>'+result);
+                    return result;
+                   
+                    /*getLocationRelatedPRLI = [
+                        SELECT Id, Name, ProductCode, IsActive, Type__c,
+                            (SELECT Id, UnitPrice, Pricebook2Id, IsActive 
+                                FROM PricebookEntries 
+                                WHERE Pricebook2.IsStandard = true AND IsActive = true),
+                            (SELECT Id, QuantityOnHand, Quantity_In_Hand__c, LocationId 
+                            FROM ProductItems)
+                        FROM Product2
+                        WHERE Id IN :Product2IdIdSet
+                        AND IsActive = true
+                        AND Type__c NOT IN :ProductTypeNotToShow
+                    ];
                     if (getLocationRelatedPRLI.size() > 0) {
                         System.debug('ProductTypeNotToShow1 ==>'+ProductTypeNotToShow);
                         System.debug('getLocationRelatedPRLI ==>'+getLocationRelatedPRLI);
                         return getLocationRelatedPRLI;
-                    }
+                    }*/
                 }
             }
         } catch (Exception e) {
@@ -300,6 +361,15 @@ public Without Sharing class ProductRequestLineController {
         
         return null;
     }
+    public class ProductWithQty {
+    @AuraEnabled public Id productId { get; set; }
+    @AuraEnabled public String name { get; set; }
+    @AuraEnabled public String productCode { get; set; }
+    @AuraEnabled public String typeOfProduct { get; set; }
+    @AuraEnabled public Decimal unitPrice { get; set; }    
+    @AuraEnabled public Decimal quantityInHand { get; set; }
+    @AuraEnabled public Decimal igstPercentage {get; set;}
+}
     
     // Method for Creation Bulk RLI Records
     @AuraEnabled
@@ -851,13 +921,15 @@ public Without Sharing class ProductRequestLineController {
                 } 
             }
 
-            PORecToUpdate = [SELECT Id,Status FROM ProductRequest WHERE Id=:POId];
+            PORecToUpdate = [SELECT Id,Status FROM ProductRequest WHERE Id=:POId ];
             if (!newOrderItems.isEmpty()) {
                 insert newOrderItems;
-                if(PORecToUpdate !=null){
+                if (PORecToUpdate != null && PORecToUpdate.Status != 'Partial Fulfilled') {
                     PORecToUpdate.Status = 'Processing';
                     update PORecToUpdate;
-                    System.debug('PORecToUpdate == >'+PORecToUpdate);
+                    System.debug('Updated ProductRequest: ' + PORecToUpdate);
+                } else {
+                    System.debug('ProductRequest status is Partial Fulfilled - no update done.');
                 }
 
                 Id orderIdToUpdate = newOrderItems[0].OrderId;

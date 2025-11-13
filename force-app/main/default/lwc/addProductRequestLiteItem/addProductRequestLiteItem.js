@@ -13,7 +13,8 @@ import userId from '@salesforce/user/Id';
 import { CloseActionScreenEvent } from 'lightning/actions';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { LightningElement, api, track } from 'lwc';
-export default class AddProductRequestLiteItem extends LightningElement {
+import { NavigationMixin } from 'lightning/navigation';
+export default class AddProductRequestLiteItem extends NavigationMixin(LightningElement) {
     @api productType = 'Service';
 
     @api recordId;
@@ -59,14 +60,20 @@ export default class AddProductRequestLiteItem extends LightningElement {
         const startTime = new Date().getTime();
         getLogedInUserRelatedLocationPOLI({ loggedInUserId: this.currentUserId, productTypeFilter: this.productType  })
             .then((data) => {
+                console.log('data : ' + JSON.stringify(data));
                 if (data) {
                     this.requestLineItems = data.map((res) => ({
-                        Id: res.Id,
-                        ProductName: res.Name,
-                        ProductCode: res.ProductCode,
+                        Id: res.productId,
+                        ProductName: res.name,
+                        ProductCode: res.productCode,
                         AllocatedQuantity: 0,
                         selected: false,
-                        isChargesDisabled: true,
+                        isChargesDisabled: true, 
+                        UnitPrice: res.unitPrice,
+                        QtyInHand: res.quantityInHand,
+                        IGSTPercentage: res.igstPercentage ? res.igstPercentage : 0,
+                        TotalAmount: 0,
+                        TaxableAmount: 0
                     }));
                     this.filteredRequestLineItems = [];
                     this.error = undefined;
@@ -156,16 +163,30 @@ export default class AddProductRequestLiteItem extends LightningElement {
     
         this.updatePageData();
         this.selectAllChecked = this.currentPageData.every(item => item.selected);
-        this.buttonVisible = this.selectedItems.length > 0;
+        this.buttonVisible = this.selectedItems.length > 0 || this.selectAllChecked.length > 0;
     }
 
     handleQuantityChange(event) {
         debugger;
         const itemId = event.target.dataset.id;
-        const updatedQuantity = parseFloat(event.target.value);
+        const updatedQuantity = parseFloat(event.target.value) || 0;
         this.selectedItems = this.selectedItems.map(item => {
             if (item.Id === itemId) {
                 item.AllocatedQuantity = updatedQuantity;
+
+                // base total
+                const baseTotal = (item.UnitPrice || 0) * updatedQuantity;
+
+                // Apply IGST percentage (if available)
+                const taxPercent = item.IGSTPercentage || 0;
+                const taxAmount = (baseTotal * taxPercent) / 100;
+
+                item.TaxableAmount = Math.round((taxAmount) * 100) / 100;
+                
+                //item.TotalAmount = baseTotal + taxAmount;
+                item.TotalAmount = Math.round((baseTotal + taxAmount) * 100) / 100;
+
+                
             }
             return item;
         });
@@ -185,6 +206,7 @@ export default class AddProductRequestLiteItem extends LightningElement {
     }
 
     handleSelectAll(event) {
+        debugger;
         const isChecked = event.target.checked;
         this.selectAllChecked = isChecked;
         this.currentPageData = this.currentPageData.map(item => {
@@ -196,6 +218,7 @@ export default class AddProductRequestLiteItem extends LightningElement {
             if (isChecked) {
                 if (!this.selectedItems.find(i => i.Id === item.Id)) {
                     this.selectedItems = [...this.selectedItems, updatedItem];
+                    this.buttonVisible = true; // CODE ADDED
                 }
             } else {
                 this.selectedItems = this.selectedItems.filter(i => i.Id !== item.Id);
@@ -210,6 +233,7 @@ export default class AddProductRequestLiteItem extends LightningElement {
     
     
     handleCheckboxChange(event) {
+        debugger;
         const itemId = event.target.dataset.id;
         const isChecked = event.target.checked;
     
@@ -298,6 +322,12 @@ export default class AddProductRequestLiteItem extends LightningElement {
                     );
                     this.updatedValues.clear();
                     this.closeModal();
+                    this[NavigationMixin.Navigate]({
+                        type: 'standard__webPage',
+                        attributes: {
+                            url: `/autocloudSite/s/detail/${this.PoCreatedRecordId}`
+                        }
+                    });
                 } else {
                     this.dispatchEvent(
                         new ShowToastEvent({
@@ -330,7 +360,7 @@ export default class AddProductRequestLiteItem extends LightningElement {
         }
         this.showProductSpinner= true;
         setTimeout(()=>{
-            createPurchaseorder({ shipmentType: this.recordId.shipmentType, loggedInUserId: this.recordId.loggedInUserId, ProductType : this.productType }).then(result => {
+            createPurchaseorder({ shipmentType: this.recordId.shipmentType, loggedInUserId: this.recordId.loggedInUserId, ProductType : this.productType}).then(result => {
                 if (result && result != null) {
                     this.PoCreatedRecordId = result;
                     this.handleUpdateProcess();
@@ -431,7 +461,15 @@ export default class AddProductRequestLiteItem extends LightningElement {
         return hasZeroQuantity;
     }
     disconnectedCallback() {
-    this.removeEventListener('filterchange', this.handleFilterChange);
-}
+        this.removeEventListener('filterchange', this.handleFilterChange);
+    }
+
+    get grandTotal() {
+        const total = this.selectedItems.reduce((sum, item) => {
+            return sum + (item.TotalAmount ? item.TotalAmount : 0);
+        }, 0);
+
+        return total.toFixed(2); // returns string like "123.45"
+    }
 
 }

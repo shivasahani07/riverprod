@@ -1,4 +1,4 @@
-trigger WorkOrderTrigger on WorkOrder (before insert, before update, after update, after Insert) {
+trigger WorkOrderTrigger on WorkOrder (before insert, before update, after update, after Insert, before delete) {
     public static Boolean isFirstRun = true;
     
     if(trigger.isBefore && trigger.isUpdate){
@@ -123,6 +123,10 @@ trigger WorkOrderTrigger on WorkOrder (before insert, before update, after updat
     if (trigger.isAfter && trigger.isInsert) {
         // WorkOrderTriggerHandler.handleNewJobCards(trigger.new);
         // WorkOrderTriggerHandler.onJobcardOpenUdpateAssetMilestone(trigger.new);
+    }
+    
+    if(trigger.IsBefore && trigger.IsDelete){
+        DMLLogger.logChanges(Trigger.oldMap, null, 'DELETE', 'WorkOrder');
     }
     
 }

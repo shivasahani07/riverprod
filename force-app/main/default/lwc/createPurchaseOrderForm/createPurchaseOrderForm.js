@@ -5,19 +5,18 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { api, track,wire } from 'lwc';
 import USER_ID from '@salesforce/user/Id';
 import { getRecord } from 'lightning/uiRecordApi';
+
 import ACCOUNT_FIELD from '@salesforce/schema/User.AccountId';
 
 export default class CreatePurchaseOrderForm extends LightningModal {
-
-    //added by Aniket on 19/08/2025
-   @track userAccountId;
+   //added by Aniket on 19/08/2025
+   userAccountId;
 
     // Fetch current user's AccountId
     @wire(getRecord, { recordId: USER_ID, fields: [ACCOUNT_FIELD] })
     wiredUser({ error, data }) {
         if (data) {
             this.userAccountId = data.fields.AccountId.value;
-            console.log('this.userAccountId==>',this.userAccountId);
         } else if (error) {
             console.error('Error fetching user account: ', error);
         }
@@ -38,6 +37,7 @@ export default class CreatePurchaseOrderForm extends LightningModal {
     accountRecordId = '';
     locationRecordId = '';
     selectedType = '';
+    deliveryDate='';
 
     @api purchaseOrderRecordId = {};
     @api POTempObj = {};
@@ -90,15 +90,15 @@ export default class CreatePurchaseOrderForm extends LightningModal {
     }
 
     get typeOptions() {
-       let options = [
+        let options = [
             { label: 'Service', value: 'Service' },
             { label: 'Accessories', value: 'Accessories' }
         ];
 
         // Add "Merchandise" only if AccountId matches
-        if (this.userAccountId === '001J400000JDB6kIAH' || this.userAccountId === '001J400000O3AobIAF' || this.userAccountId === '001J40000030aBEIAY') {
+        //if (this.userAccountId === '001F400002SOh0yIAD' || this.userAccountId === '001F400002T242iIAB' || this.userAccountId === '001J400000JDB6kIAH') {
             options.push({ label: 'Merchandise', value: 'Merchandise' });
-        }
+        //}
 
         return options;
     }
@@ -109,7 +109,29 @@ export default class CreatePurchaseOrderForm extends LightningModal {
 
     handleShipmentChange(event) {
         this.shipmentType = event.detail.value;
+
     }
+    //added by Aniket on 16/08/2025
+    // handleDeliveryDate(event){
+    //     debugger;
+    //     this.deliveryDate=event.target.value;
+    //     console.log('this.deliveryDate=>',this.deliveryDate);
+
+    //     let inputDateValidity = this.template.querySelector('.inputDate');
+
+    //     let rightNow = new Date();
+    //     let yyyyMmDd = rightNow.toISOString().slice(0,10);
+
+    //     let today = new Date(yyyyMmDd);
+    //     let inputDate = new Date(this.deliveryDate);
+
+    //     if(inputDate < today){
+    //         inputDateValidity.setCustomValidity('Choose a future Date');
+    //     }else{
+    //         inputDateValidity.setCustomValidity('');
+    //     }
+    //     inputDateValidity.reportValidity();
+    // }
 
     handleSubmitProcess() {
         if (this.shipmentType === '' || this.locationRecordId === null) {
@@ -122,6 +144,43 @@ export default class CreatePurchaseOrderForm extends LightningModal {
             );
             return;
         }
+        //new validation added by Aniket
+        // let rightNow = new Date();
+        // let yyyyMmDd = rightNow.toISOString().slice(0,10);
+
+        // let today = new Date(yyyyMmDd);
+        // let inputDate = new Date(this.deliveryDate);
+        // if(inputDate < today){
+        //     this.dispatchEvent(
+        //         new ShowToastEvent({
+        //             title: 'Error',
+        //             message: 'Expected Delivery Date Cannot be in past',
+        //             variant: 'error'
+        //         })
+        //     );
+        //     return;
+        // }
+        
+
+        //  let inputDateValidity = this.template.querySelector('.inputDate');
+        //  if(this.deliveryDate == ''){
+        //    inputDateValidity.setCustomValidity('Choose a Date');
+        //    this.dispatchEvent(
+        //         new ShowToastEvent({
+        //             title: 'Error',
+        //             message: 'Expected Delivery Date Cannot be Blank',
+        //             variant: 'error'
+        //         })
+        //     );
+        //     return;
+        //  }else{
+        //     inputDateValidity.setCustomValidity('');
+        //  }
+        //  inputDateValidity.reportValidity();
+         
+
+
+           
 
         this.firstScreen = false;
         this.middleScreen = true;
@@ -137,7 +196,9 @@ export default class CreatePurchaseOrderForm extends LightningModal {
         const obj = {
             shipmentType: this.shipmentType,
             loggedInUserId: this.currentUserId,
-            selectedType: this.selectedType
+            selectedType: this.selectedType,
+            deliveryDate: this.deliveryDate//added by Aniket on 16/08/2025
+
         };
 
         this.purchaseOrderRecordId = obj;

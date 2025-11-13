@@ -2,7 +2,7 @@
  * @description       : 
  * @author            : Aniket Karmakar
  * @group             : 
- * @last modified on  : 07-03-2025
+ * @last modified on  : 10-21-2025
  * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
 **/
 public without sharing class AverageCalculationOnFeedbackPSF {
@@ -123,4 +123,114 @@ public without sharing class AverageCalculationOnFeedbackPSF {
             System.debug('Error Line Number Is==>'+e.getLineNumber());
         }
     }
+    //added by Aniket on 12/08/2025 for Report Issue
+//     public static void createAnswerChildObject(List<Feedback_Response__c> newList, Map<Id, Feedback_Response__c> oldMapList) {
+//     try {
+//         Map<Id, List<String>> responseToAnswersMap = new Map<Id, List<String>>();
+//         Set<Id> questionMap = new Set<Id>();
+        
+//         for (Feedback_Response__c f : newList) {
+//             Feedback_Response__c oldOne = oldMapList.get(f.Id);
+
+//             if (f.Answer__c != oldOne.Answer__c && String.isNotBlank(f.Answer__c)) {
+//                 responseToAnswersMap.put(f.Id, f.Answer__c.split(',')); 
+//                 questionMap.add(f.Feedback_Question__c);
+//             }
+//         }
+//         System.debug('responseToAnswersMap==>'+responseToAnswersMap);
+
+//         if (responseToAnswersMap.isEmpty()) {
+//             System.debug('No Answers To Process');
+//             return;
+//         }
+
+
+//        List<Feedback_Question__c> fbList =[SELECT Id,Name FROM Feedback_Question__c WHERE Id IN:questionMap];
+
+
+        
+//         List<Feedback_Response_Answers__c> answersToInsert = new List<Feedback_Response_Answers__c>();
+//         for (Id respId : responseToAnswersMap.keySet()) {
+//             List<String> ansList = responseToAnswersMap.get(respId);
+//             for (Integer i = 0, size = ansList.size(); i < size; i++) {
+//                 answersToInsert.add(new Feedback_Response_Answers__c(
+//                     Answer__c = ansList[i],
+//                     Feedback_Response__c = respId,
+//                     Question__c=questionMap.get(respId)
+
+//                 ));
+//             }
+//         }
+
+       
+//         if (!answersToInsert.isEmpty()) {
+//             insert answersToInsert;
+//             System.debug('Inserted Answer Records ==> ' + answersToInsert);
+//         }
+
+//     } catch (Exception e) {
+//         System.debug('Error Occurred ==> ' + e.getMessage());
+//         System.debug('Error Line Number ==> ' + e.getLineNumber());
+//     }
+// }
+
+  public static void createAnswerChildObject(List<Feedback_Response__c> newList, Map<Id, Feedback_Response__c> oldMapList) {
+    try {
+        Map<Id, List<String>> responseToAnswersMap = new Map<Id, List<String>>();
+        Map<Id, Id> responseToQuestionMap = new Map<Id, Id>(); // ✅ new map
+        Set<Id> questionIds = new Set<Id>();
+
+        // Step 1: Identify changed answers and map responses to questions
+        for (Feedback_Response__c f : newList) {
+            Feedback_Response__c oldOne = oldMapList.get(f.Id);
+            if (f.Answer__c != oldOne.Answer__c && String.isNotBlank(f.Answer__c)) {
+                responseToAnswersMap.put(f.Id, f.Answer__c.split(','));
+                responseToQuestionMap.put(f.Id, f.Feedback_Question__c); // ✅ track which question belongs to each response
+                questionIds.add(f.Feedback_Question__c);
+            }
+        }
+
+        if (responseToAnswersMap.isEmpty()) {
+            System.debug('No Answers To Process');
+            return;
+        }
+
+        // Step 2: Query question names (optional, if you need names)
+        Map<Id, Feedback_Question__c> questionMap = new Map<Id, Feedback_Question__c>(
+            [SELECT Id, Name FROM Feedback_Question__c WHERE Id IN :questionIds]
+        );
+
+        // Step 3: Create child answer records
+        List<Feedback_Response_Answers__c> answersToInsert = new List<Feedback_Response_Answers__c>();
+
+        for (Id respId : responseToAnswersMap.keySet()) {
+            List<String> ansList = responseToAnswersMap.get(respId);
+            Id questionId = responseToQuestionMap.get(respId);
+            String questionName = questionMap.containsKey(questionId) ? questionMap.get(questionId).Name : null;
+
+            for (String ans : ansList) {
+                answersToInsert.add(new Feedback_Response_Answers__c(
+                    Answer__c = ans,
+                    Feedback_Response__c = respId,
+                    Question__c = questionName
+                ));
+            }
+        }
+
+        if (!answersToInsert.isEmpty()) {
+            insert answersToInsert;
+            System.debug('Inserted Answer Records ==> ' + answersToInsert);
+        }
+
+    } catch (Exception e) {
+        System.debug('Error Occurred ==> ' + e.getMessage());
+        System.debug('Error Line Number ==> ' + e.getLineNumber());
+    }
+}
+
+
+
+  //this method is for the 5th Form Logic 
+ 
+
 }

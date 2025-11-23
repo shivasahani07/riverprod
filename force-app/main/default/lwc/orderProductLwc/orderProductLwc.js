@@ -106,7 +106,7 @@ export default class OrderProductLwc extends NavigationMixin(LightningElement) {
         .then((data) => {
             if (data) {
                 this.requestLineItems = data
-                    .filter(res => res.Name !== 'Road Side Assistance' && res.Type__c !== 'Road Side Assistance')
+                    //.filter(res => res.Name !== 'Road Side Assistance' && res.Type__c !== 'Road Side Assistance')
                     .map((res) => ({
                         Id: res.Id,
                         ProductName: res.Name,
@@ -124,6 +124,8 @@ export default class OrderProductLwc extends NavigationMixin(LightningElement) {
                         totalPrice: 0,
                         isChargesDisabled: true,
                     }));
+
+                console.log('this.requestLineItems===>',JSON.stringify(this.requestLineItems));    
                 this.filteredRequestLineItems = [];
                 this.error = undefined;
             } else {
@@ -151,6 +153,7 @@ export default class OrderProductLwc extends NavigationMixin(LightningElement) {
             this.filteredRequestLineItems = this.requestLineItems.filter(item => (
                 item.ProductName.toLowerCase().startsWith(searchTerm) || item.ProductCode.toLowerCase().startsWith(searchTerm) || item.Type.toLowerCase().startsWith(searchTerm))
             );
+            console.log('this.filteredRequestLineItems===>',JSON.stringify(this.filteredRequestLineItems));
             this.totalPages = Math.ceil(this.filteredRequestLineItems.length / this.recordsPerPage);
             this.currentPage = 1;
             this.updatePageData();

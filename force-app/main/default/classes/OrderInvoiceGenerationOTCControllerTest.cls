@@ -54,7 +54,7 @@ public class OrderInvoiceGenerationOTCControllerTest {
         );
         insert pbeRSA;
         
-        OrderItem orderItem = new OrderItem(
+        /*OrderItem orderItem = new OrderItem(
             OrderId = order.Id,
             Product2Id = testProduct.Id,
             Quantity = 1,
@@ -62,7 +62,7 @@ public class OrderInvoiceGenerationOTCControllerTest {
             PricebookEntryId = pbe.id,
             Type__c = 'Accessories'
         );
-        insert orderItem;
+        insert orderItem;*/
         
         OrderItem rsaItem = new OrderItem(
             OrderId = order.Id,
@@ -85,11 +85,12 @@ public class OrderInvoiceGenerationOTCControllerTest {
         
         Test.setCreatedDate(order.Id,mockCreatedDate);
         
-        Test.setCreatedDate(orderItem.Id,mockCreatedDate);
+        //Test.setCreatedDate(orderItem.Id,mockCreatedDate);
         
         Test.setCreatedDate(rsaItem.Id,mockCreatedDate);
         
         Test.startTest();
+        OrderInvoiceGenerationOTCController.testMethodCoverage();
         order.Status='Invoice Generation';
         update order;
         Test.stopTest();

@@ -1,0 +1,136 @@
+.custom-container{
+	color : black;
+}
+.warning-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+ 
+.warning-icon-wrapper {
+    padding: 20px;
+}
+ 
+.warning-icon {
+    height: 100px;
+    width: 100px;
+    animation: glowPulse 2s infinite ease-in-out;
+}
+ 
+/* Glow / radiation effect */
+@keyframes glowPulse {
+    0% {
+        filter: drop-shadow(0 0 2px red) drop-shadow(0 0 4px red);
+        transform: scale(1);
+    }
+    50% {
+        filter: drop-shadow(0 0 15px red) drop-shadow(0 0 30px rgba(255,0,0,0.7));
+        transform: scale(1.1);
+    }
+    100% {
+        filter: drop-shadow(0 0 2px red) drop-shadow(0 0 4px red);
+        transform: scale(1);
+    }
+}
+ 
+.warning-text {
+    color: red;
+    font-size: medium;
+    text-align: center;
+    margin-top: 10px;
+    animation: fadeIn 1.5s ease-in-out;
+}
+ 
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+
+
+
+.success-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95); /* block background fully */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.checkmark-circle {
+  width: 220px;   /* bigger */
+  height: 220px;
+  border-radius: 50%;
+  background: #eaffea;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: popIn 1s ease forwards;
+  box-shadow: 0 0 40px rgba(40, 167, 69, 0.9);
+}
+
+.checkmark {
+  width: 90px;   /* larger tick */
+  height: 160px;
+  border-right: 30px solid #28a745;
+  border-bottom: 30px solid #28a745;
+  transform: rotate(45deg);
+  opacity: 0;
+  animation: draw 2s ease forwards 1s; /* slower, smoother */
+}
+
+.success-text {
+  color: #28a745;
+  font-size: 4rem; /* bigger font */
+  font-weight: bold;
+  margin-top: 30px;
+  animation: fadeInUp 1.5s ease-in-out 2.5s both;
+}
+
+
+/* Animations */
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  80% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes draw {
+  0% { opacity: 0; transform: rotate(45deg) scale(0.8); }
+  50% { opacity: 1; transform: rotate(45deg) scale(1.05); }
+  100% { opacity: 1; transform: rotate(45deg) scale(1); }
+}
+
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+
+
+
+.spinner-overlay {
+    position: fixed;    
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.7); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;  
+}

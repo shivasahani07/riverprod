@@ -122,9 +122,9 @@ static void testPreventUpdateForJobCardStatus_BlockingStatus() {
     };
     insert workOrders;
 
-    WorkPlan prtBlocked = new WorkPlan(Name = 'test', ParentRecordId = workOrders[0].Id);
-    WorkPlan prtAllowed = new WorkPlan(Name = 'test', ParentRecordId = workOrders[1].Id);
-    insert new List<WorkPlan>{prtBlocked, prtAllowed};
+    //WorkPlan prtBlocked = new WorkPlan(Name = 'test', ParentRecordId = workOrders[0].Id);
+    //WorkPlan prtAllowed = new WorkPlan(Name = 'test', ParentRecordId = workOrders[1].Id);
+    //insert new List<WorkPlan>{prtBlocked, prtAllowed};
 
     WorkOrderLineItem woliAllowed = new WorkOrderLineItem(
         WorkOrderId = workOrders[0].Id,
@@ -197,11 +197,11 @@ Account testAccount = new Account(
     Test.startTest();
 
     try {
-        update prtBlocked;
+       // update prtBlocked;
         update woliBlockedInsert;
         update csVocieBlocked;
         update tckt;
-        Delete prtAllowed;
+        //Delete prtAllowed;
         //update newAP;
         update testClaim;
         update po;

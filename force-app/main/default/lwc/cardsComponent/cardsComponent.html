@@ -48,13 +48,13 @@
                     <div class="card-description">No Batches yet.</div>
                 </div>
 
-                 <div class="card" onclick={navigateToAddMerchandiseOrders}>
-                    <div class="card-title">OTC Sale</div>
+                <div class="card" onclick={navigateToAddMerchandiseOrders}>
+                    <div class="card-title">OTC Sales</div>
                     <div class="card-icon">
                         <img src={NoPurchaseOrderimg} alt="Create MO" />
                     </div>
                     <div class="card-description">No Orders yet.</div>
-                </div> 
+                </div>  
         
                 <div class="card" onclick={navigateToGetLeadDetails}>
                     <div class="card-title">Lead Transfer Request</div>
@@ -80,6 +80,22 @@
                 <img src={Nocasesimg} alt="Create Cases" />
             </div>
             <div class="card-description">No Cases yet.</div>
+        </div>
+
+        <!-- Show VOR Card -->
+        <!-- <div class="card" onclick={navigateToAddVorDatatable}>
+            <div class="card-title">VOR</div>
+            <div class="card-icon">
+                <img src={Nocasesimg} alt="Create Cases" />
+            </div>
+            <div class="card-description">No VOR yet.</div>
+        </div> -->
+         <div class="card" onclick={navigateToCreateAppointment}>
+            <div class="card-title">New Appointment</div>
+            <div class="card-icon">
+                <img src={Nocasesimg} alt="Create Appointment" />
+            </div>
+            <div class="card-description">No Appointment yet.</div>
         </div>
     </div>
 </template>

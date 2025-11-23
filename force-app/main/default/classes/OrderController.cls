@@ -273,7 +273,7 @@ public static String createOrderRecord(String shipmentType, Integer additonal, S
                     throw new AuraHandledException('You are not eligible to add Extended Warranty – 8 Years Upgrade (10–12M)');
                 }else if(String.valueof(ewProductCode) == 'RV-EW-7'){
                     throw new AuraHandledException('Without 5 Years Warranty Present, You Canot Add Extended Warranty – 8 Years Upgrade (10–12M)');
-                }else if(eligibilityMonth>11){
+                }else if(eligibilityDate>365){
                     throw new AuraHandledException('You are not eligible to add any Extended Warranty Product');
                 }
                 
@@ -465,7 +465,7 @@ public static String createOrderRecord(String shipmentType, Integer additonal, S
                     string AccountPhoneNo=oo.Account.Phone;
                     system.debug('chassisNO == >'+chassisNO+' && OrderIdnumber == >'+OrderIdnumber+' && AccountName == >'+AccountName+' && AccountPhoneNo == >'+AccountPhoneNo+' && VehicleId == >'+VehicleId);
                     if(chassisNO != null || chassisNO != ''){
-                        RSAcalloutHelper.RsaCreationFuthuremethod(chassisNO,OrderIdnumber,AccountName,AccountPhoneNo,VehicleId);
+                        //RSAcalloutHelper.RsaCreationFuthuremethod(chassisNO,OrderIdnumber,AccountName,AccountPhoneNo,VehicleId);
                     }else{
                         system.debug('Method Not Called  RsaCreationFuthuremethod ** /  chassisNO is not Found == >');
                     }

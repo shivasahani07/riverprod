@@ -67,7 +67,7 @@ public class AssetMilestoneTriggerWorker {
                 }
             }
             else if(vehicleStatus != null && vehicleStatus.containsKey(updatedParent.vehicleID) && vehicleStatus.get(updatedParent.vehicleID) == false) {
-                updatedParent.addError('Please make sure all PDI is checked of vehicle before moving to the next milestone.');
+                //updatedParent.addError('Please make sure all PDI is checked of vehicle before moving to the next milestone.');
             }
             
         }
@@ -107,7 +107,7 @@ public class AssetMilestoneTriggerWorker {
         for (AssetMilestone newMilestone : milestones) {
             //Jitendra : Date Validation Added as per UAT feedback
             if(newMilestone.MilestoneType != 'Order Received' && newMilestone.MilestoneDate < System.today()){
-                newMilestone.addError('The milestone date must be today or a future date.');
+                //newMilestone.addError('The milestone date must be today or a future date.');
             }
             
             
@@ -117,7 +117,7 @@ public class AssetMilestoneTriggerWorker {
             // Check if the combination already exists in the set
             if (existingVehicleMilestoneTypes.contains(newVehicleMilestoneKey)) {
                 // If it does, prevent the insertion of the new AssetMilestone
-                newMilestone.addError('Milestone with the same vehicle and service type are already exists.');
+                //newMilestone.addError('Milestone with the same vehicle and service type are already exists.');
             }
         }
     }
@@ -219,12 +219,12 @@ public class AssetMilestoneTriggerWorker {
                     System.debug('vehicleStatus.get(key) :'+vehicleStatus.get(key));
                     System.debug('asset.MilestoneType :'+asset.MilestoneType);
                     if(lastStatusSeq + 1 != nextStatusSeq){
-                          asset.addError('You cannot create a '+asset.MilestoneType+' milestone before completing the prior milestones.');
+                          //asset.addError('You cannot create a '+asset.MilestoneType+' milestone before completing the prior milestones.');
                     }
                 } 
                 else if(isFirstMileStone && milestoneseqs.get(asset.MilestoneType) != 1){
                     System.debug('milestoneseqs.get(asset.MilestoneType) : '+milestoneseqs.get(asset.MilestoneType));
-                     asset.addError('You cannot create a '+asset.MilestoneType+' milestone before completing the prior milestones.');
+                     //asset.addError('You cannot create a '+asset.MilestoneType+' milestone before completing the prior milestones.');
                 }
             }
         }

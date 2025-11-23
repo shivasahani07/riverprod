@@ -1,0 +1,129 @@
+<template>
+
+    <template if:true={showWarning}>
+    <div class="warning-container">
+    <div class="warning-icon-wrapper">
+        <img src={warningLogo} alt="Warning" class="warning-icon" />
+    </div>
+    <h1 class="warning-text">Oops! Service Appointment is already there</h1>
+   </div>
+ 
+    </template>
+
+    <template if:false={showWarning}>
+         <lightning-card title="Book Appointment">
+        <div class="slds-p-around_medium">
+
+            <!-- Service Center (Read-only input displaying fetched center name) -->
+            <lightning-input
+                name="serviceCenter"
+                label="Service Center"
+                value={serviceCenterName}
+                disabled>
+            </lightning-input>
+
+            <!-- VRN (read-only) -->
+            <lightning-input
+                name="vrn"
+                label="Vehicle Registration Number (VRN)"
+                value={vrn}
+                disabled>
+            </lightning-input>
+
+            <!-- Contact Number (read-only) -->
+            <lightning-input
+                name="contactNumber"
+                type="tel"
+                label="Contact Number"
+                value={contactNumber}
+                disabled>
+            </lightning-input>
+
+           <lightning-combobox
+        name="picklist"
+        label="Type Of Requested Services"
+        value=""
+        placeholder="Select an option"
+        options={options}
+         onchange={handleSelectServices}>
+    </lightning-combobox>
+
+            <!-- Appointment Date -->
+            <lightning-input
+                name="appointmentDate"
+                type="date"
+                label="Appointment Date"
+                value={appointmentDate}
+                min={minDate}
+                onchange={handleDateChange}>
+            </lightning-input>
+
+            <!-- Appointment Slot Item Picklist -->
+            <template if:true={slotsAvailable}>
+                <div class="slds-m-top_medium">
+                    <lightning-combobox
+                        name="selectedSlotItem"
+                        label="Available Slot Items"
+                        placeholder="Select a slot"
+                        options={slotItemOptions}
+                        value={selectedSlotItem}
+                        onchange={handleSlotItemChange}>
+                    </lightning-combobox>
+                </div>
+            </template>
+
+            <template if:true={slotSearchTriggered}>
+                <template if:false={slotsAvailable}>
+                    <div class="slds-m-top_medium slds-text-color_error">
+                        No slots are available for the selected date.
+                    </div>
+                </template>
+            </template>
+
+            <!-- Appointment Description (shown conditionally) -->
+            <template if:true={showDescriptionField}>
+                <lightning-input
+                    name="appointmentDesc"
+                    type="text"
+                    label="Appointment Description"
+                    value={appointmentDecription}
+                    onchange={handleAppointmentDesc}>
+                </lightning-input>
+            </template>
+<!--c-loader loading={isLoading}></c-loader-->
+            <template if:true={isLoading}>
+      <lightning-spinner alternative-text="Loading accounts" size="medium"></lightning-spinner>
+    </template>
+
+            <!-- Submit Button -->
+            <div class="slds-m-top_medium slds-align_absolute-center">
+                <lightning-button
+                    label="Submit"
+                    variant="brand"
+                    onclick={handleSubmit}
+                    disabled={isSubmitDisabled}>
+                </lightning-button>
+            </div>
+
+        </div>
+    </lightning-card>
+    </template>
+
+    <template if:true={showSpinner}>
+    <div class="spinner-overlay">
+        <lightning-spinner alternative-text="Loading" size="large" variant="brand"></lightning-spinner>
+    </div>
+</template>
+
+<template if:true={showSuccessAnimation}>
+    <div class="success-overlay">
+        <div class="checkmark-circle">
+        <div class="checkmark"></div>
+        </div>
+        <h1 class="success-text">Success!</h1>
+    </div>
+    </template>
+
+
+    
+</template>

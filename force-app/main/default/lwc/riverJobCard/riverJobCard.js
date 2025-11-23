@@ -28,7 +28,7 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
     @track label = 'VIN';
     @track vehicleIdentifier = '';
     @track phoneNumber = '';
-    @track ewSubmitted=false;
+    @track ewSubmitted = false;
     @track vehicleDetails = {
         VehicleIdentificationNumber: '',
         VehicleRegistrationNumber: '',
@@ -87,6 +87,7 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
     @track ServiceCenter = '';
     @track CityName = '';
     @track City = '';
+    errorMessage = '';
 
     primaryContact = {
         Name: '',
@@ -103,6 +104,19 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
     @track isSecondaryPresent = false;
     @track EstimatedDeliveryTime;
     @track enableFetchButton = true;
+    @track FUTUREMilstoneDate;
+    @track taskduedate;
+    @track futurAppointmentDate;
+    @track daysDifference;
+    @track assetMilestoneNam;
+    @track lapseMilestoneName;
+    @track CompletedMilestoneName;
+    @track nextMilestoneName;
+    @track showMilestoneMessage = false;
+    @track showAppointmentMessage = false;
+    @track showerrorMessage = false;
+    @track showMiletoneExpireMessage = false;
+    @track showNoCurrentMilestoneMessage = false;
 
     error;
     @track jobtypes;
@@ -130,6 +144,8 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
 
     // Job Card Creation Condtion
     @track isJobCreationAllowed;
+
+    @track jobTypeChangeValue='';
 
     get options() {
         return [
@@ -209,6 +225,9 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
 
         if (name === 'TypeOfJob' && value === 'Periodic maintenance') {
             this.showSubType = true;
+        }else if(name === 'TypeOfJob' && value != 'Periodic maintenance'){
+            this.showSubType = false;
+            this.subType='';
         }
 
 
@@ -426,7 +445,7 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
 
     fetchVehicleDetails() {
         debugger;
-        getALLVORWithReasonBlank({userId:this.userId})
+        getALLVORWithReasonBlank({ userId: this.userId })
             .then(result => {
                 console.log('VOR Result:', result);
 
@@ -438,7 +457,7 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
                     // alert('Pending VOR Numbers: ' + vorNumbers);
 
                     // Optional: Also show a toast
-                    this.showToastMessage('Warning',`please update vor reason for vors :${vorNumbers}`, 'warning');
+                    this.showToastMessage('Warning', `please update vor reason for vors :${vorNumbers}`, 'warning');
                     return;
                 } else {
                     // Call the Apex method to fetch vehicle details
@@ -513,8 +532,10 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
         this.otpSent = '';
     }
 
+
     verifyOTP() {
         // Validate phone number format (10 digits and only numbers)
+        debugger;
         const otp = this.template.querySelector('.otpinput');
         if (this.otpSent == this.otpEntered) {
 
@@ -542,9 +563,91 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
                     this.address.country = result.secondarycon.MailingCountry;
                     this.address.postalCode = result.secondarycon.MailingPostalCode;
                     this.address.province = result.secondarycon.MailingState;
+
+                    this.address.province = result.secondarycon.MailingState;
+                    this.assetMilestoneNam = result.currentMilestoneName;
+                    this.futurAppointmentDate = result.currentAppointmentDate;
+
                     // Do something with the contact object returned
                     this.showToastMessage('Success', 'OTP verified successfully', 'success');
                     this.tile1 = !this.tile1;
+
+                    let milestoneDate = new Date(result.furtureMilestoneDate);
+
+                    // Subtract 10 days
+                    milestoneDate.setDate(milestoneDate.getDate() - 10);
+
+                    // Assign values back
+                    this.FUTUREMilstoneDate = result.furtureMilestoneDate; // original date
+                    this.taskduedate = milestoneDate.toISOString().split('T')[0];
+
+                    let milestoneDatecount = new Date(this.FUTUREMilstoneDate);
+
+                    // Today's date
+                    let today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    // Due date (10 days before milestone)
+                    let dueDate = new Date(milestoneDatecount);
+                    dueDate.setDate(milestoneDatecount.getDate() - 10);
+
+                    // Store ISO string for taskduedate
+                    this.taskduedate = dueDate.toISOString().split('T')[0];
+
+                    // Calculate day difference (milestone - today)
+                    let diffTime = milestoneDatecount.getTime() - today.getTime();
+                    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    console.log('Days difference: ' + diffDays);
+                    this.daysDifference = diffDays;
+
+
+                    if (this.FUTUREMilstoneDate) {
+                        // Convert to Date object
+                        const milestoneDate = new Date(this.FUTUREMilstoneDate);
+
+                        // Get today’s date
+                        const today = new Date();
+
+                        // Calculate 20 days ahead from today
+                        const futureThreshold = new Date(today);
+                        futureThreshold.setDate(today.getDate() + 20);
+
+                        // Normalize both dates (remove time part)
+                        const milestoneOnly = new Date(milestoneDate.getFullYear(), milestoneDate.getMonth(), milestoneDate.getDate());
+                        const thresholdOnly = new Date(futureThreshold.getFullYear(), futureThreshold.getMonth(), futureThreshold.getDate());
+
+                        // ✅ Show message if milestone date is GREATER than 20 days from today
+                        this.showMilestoneMessage = milestoneOnly > thresholdOnly;
+                        this.showAppointmentMessage = false;
+                    } else {
+                        this.showMilestoneMessage = true;
+                    }
+                  if (this.futurAppointmentDate) {
+    const today = new Date();
+    const appointmentDate = new Date(this.futurAppointmentDate);
+
+    // Calculate the difference in milliseconds
+    const diffMs = appointmentDate.getTime() - today.getTime();
+
+    // Convert to hours
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    // 👉 Show message if appointment is less than or equal to 24 hours from now
+    if (diffHours <= 24) {
+        this.showAppointmentMessage = true;
+    } else {
+        this.showAppointmentMessage = false;
+    }
+
+    this.showMilestoneMessage = false;
+} else {
+    this.showAppointmentMessage = false;
+}
+
+
+
+
                 })
                 .catch(error => {
                     // Handle error
@@ -836,8 +939,8 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
         debugger;
         const elements = this.template.querySelectorAll('.validate');
         let proceed = true;
-        
-        
+
+
         // Iterate over each element and check validity
         elements.forEach(element => {
             element.reportValidity();
@@ -851,9 +954,9 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
             }
         });
 
-        if(this.TypeOfJob=='' || this.TypeOfJob==null){
-                this.showToastMessage('alert', 'Please Select Job Type', 'alert');
-                return;
+        if (this.TypeOfJob == '' || this.TypeOfJob == null) {
+            this.showToastMessage('alert', 'Please Select Job Type', 'alert');
+            return;
         }
 
         let hasduplicate = this.checkForDuplicates();
@@ -871,7 +974,7 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
 
         if (this.ServiceAdvisor === undefined || this.ServiceAdvisor === null || this.ServiceAdvisor === '') {
             LightningAlert.open({
-                message: 'Please selct a Service Advisor correctly! (Search and select from the drop down)',
+                message: 'Please select a Service Advisor correctly! (Search and select from the drop down)',
                 theme: 'warning',
                 label: 'Error!'
             });
@@ -922,18 +1025,43 @@ export default class RiverJobCard extends NavigationMixin(LightningElement) {
             saveCardDetails({ jobCardDetails: jobCardDetails })
                 .then(result => {
                     debugger;
-                    this.showToastMessage('Success', 'JobCard created successfully', 'success');
 
-                    const recordId = result;
+                    if (result.message === 'alreadyCompleted') {
+                        // Show custom error message in HTML
+                        this.showerrorMessage = true;
+                        this.CompletedMilestoneName = result.CompleteMileston;
+                        this.showMiletoneExpireMessage = false;
+                        this.showNoCurrentMilestoneMessage = false;
+                        //this.errorMessage = 'There is already Job Card for the same milestone';
+                        // this.showToastMessage('Error', this.errorMessage, 'error');
+                        this.disableSave = false;
+                    } else if(result.message === 'expired'){
+                        this.showMiletoneExpireMessage = true;
+                        this.lapseMilestoneName = result.lapseMileston;
+                         this.disableSave = false;
+                         this.showerrorMessage = false;
+                          this.showNoCurrentMilestoneMessage = false;
+                        }else if(result.message === 'NextMilpestone'){
+                        this.showNoCurrentMilestoneMessage = true;
+                        this.nextMilestoneName = result.uptoNextMileston;
+                         this.disableSave = false;
+                         this.showerrorMessage = false;
+                         this.showMiletoneExpireMessage = false;
+                        }
+                        else {
+                        this.showToastMessage('Success', 'JobCard created successfully', 'success');
 
-                    this[NavigationMixin.Navigate]({
-                        type: 'standard__recordPage',
-                        attributes: {
-                            recordId: recordId,
-                            objectApiName: 'WorkOrder',
-                            actionName: 'view'
-                        },
-                    })
+                        const recordId = result.jobcardId;
+
+                        this[NavigationMixin.Navigate]({
+                            type: 'standard__recordPage',
+                            attributes: {
+                                recordId: recordId,
+                                objectApiName: 'WorkOrder',
+                                actionName: 'view'
+                            },
+                        })
+                    }
                 })
                 .catch(error => {
 

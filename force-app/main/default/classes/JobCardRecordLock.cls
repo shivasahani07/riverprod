@@ -26,6 +26,25 @@ public class JobCardRecordLock {
             // Iterate over each record to extract the WorkOrder Id, which may be stored under different fields.
             for (SObject record : childRecords) {
                 Id workOrderId = null;
+				
+                
+                String sobjName = record.getSObjectType().getDescribe().getName();
+                //new Block
+                if(System.Label.Ticket_Object_Record_Lock == 'Run'){
+                     if (sobjName == 'Ticket__c') {
+    
+                    if (record.getSObjectType().getDescribe().fields.getMap().containsKey('Job_Card__c')) {
+                        workOrderId = (Id) record.get('Job_Card__c');
+                    }
+                    
+                    return;
+                }
+                }
+               
+                ////Added by Aniket
+                
+
+                
                 
                 // Check if the record has the standard WorkOrderId field, else check for custom fields.
                 if (record.getSObjectType().getDescribe().fields.getMap().containsKey('WorkOrderId')) {

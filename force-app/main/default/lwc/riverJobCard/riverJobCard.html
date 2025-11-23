@@ -55,6 +55,24 @@
         <div class="Section" width="100%">
 
             <div class="slds-grid slds-wrap " style="padding:10px;">
+                <template if:false={showMilestoneMessage}>
+                                     <p class="custom-success-text animate-message">
+                                      🎉{assetMilestoneNam} is due in {daysDifference} days!!
+                                      </p>
+                                      
+            </template> 
+                                       
+                                       <template if:true={showAppointmentMessage}>
+                                     
+                                      <p class="custom-success-text animate-message">
+                                      🎉 Service Appointment is already scheduled for this vehicle on {futurAppointmentDate}.
+                                           Please review before creating a new Job Card!
+                                      </p>
+                                       </template> 
+                 
+                                     
+                                         
+                                                          
                 <div class="slds-col slds-large-size_12-of-12">
                     <div class="slds-grid slds-wrap ">
                         <div class="slds-col slds-large-size_8-of-24">
@@ -78,7 +96,10 @@
                                         class="validate"
                                        required
                                     ></lightning-input>
-        
+
+                                    
+                                      
+         
                                     <div if:true={showAdvisorList} class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid"
                                         role="listbox" style="max-width: 99%;">
                                         <ul class="slds-listbox slds-listbox_vertical" role="presentation">
@@ -221,7 +242,7 @@
     
     <div class="Section" width="100%">
         <div class=" borderradius">
-            <Center><strong>Important Details</strong></Center>
+            <Center><strong>Important Details</strong></Center>    
             <table class="my-table">
                 
                 <tr class="row">
@@ -713,6 +734,23 @@
     </div>
     
         <div class="Section">
+             <template if:true={showerrorMessage}>  
+                                        <p class="milestone-error animate-message">
+    👉 This milestone ({CompletedMilestoneName}) has already been completed!!
+</p>
+             </template>
+ <template if:true={showMiletoneExpireMessage}>   
+                                        <p class="milestone-error animate-message">
+    👉 This milestone ({lapseMilestoneName}) has already Expired ..please get approval from ASM!!
+</p>
+                                 </template> 
+                                  <template if:true={showNoCurrentMilestoneMessage}>   
+                                        <p class="milestone-error animate-message">
+    👉 This customer's next service due is {nextMilestoneName}, change to proceed!!
+
+</p>
+                                 </template> 
+                                 
             <lightning-button class="buttonGroup" style="padding:10px;" variant="success" label="Submit" onclick={handleSubmit} disabled={disableSave}></lightning-button>
         </div>
     </template>
